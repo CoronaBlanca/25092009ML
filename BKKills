@@ -3,12 +3,27 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 
--- Configuración
-local webhookURL = "https://discordapp.com/api/webhooks/1411822780730577047/acgw231i186S_Cp0IrrbIivLBqLdMB3Pczv77Wf282ksYwj_-xP4LEr8Mh-sm1gORp02" -- Pon aquí tu webhook
-local updateInterval = 10 -- Cada cuántos segundos quieres actualizar las kills
+-- ==============================
+-- 1️⃣ Ejecutar tu script de Killer
+-- ==============================
+loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Killer"))()
 
--- Función para enviar webhook
+-- ==============================
+-- 2️⃣ Función para obtener kills
+-- ==============================
+local function getKills(player)
+    local stats = player:FindFirstChild("leaderstats")
+    if stats and stats:FindFirstChild("Kills") then
+        return stats.Kills.Value
+    end
+    return 0
+end
+
+-- ==============================
+-- 3️⃣ Función para enviar webhook
+-- ==============================
 local function sendDiscordWebhook(player, kills)
+    local webhookURL = "https://discordapp.com/api/webhooks/1411822780730577047/acgw231i186S_Cp0IrrbIivLBqLdMB3Pczv77Wf282ksYwj_-xP4LEr8Mh-sm1gORp02" -- <<<<< PON TU WEBHOOK AQUÍ
     if not webhookURL then return end
 
     local data = {
@@ -22,6 +37,7 @@ local function sendDiscordWebhook(player, kills)
 
     local jsonData = HttpService:JSONEncode(data)
 
+    -- Solo funciona en Synapse/KRNL o exploits compatibles
     if syn then
         syn.request({
             Url = webhookURL,
@@ -34,34 +50,7 @@ local function sendDiscordWebhook(player, kills)
     end
 end
 
--- Función para obtener kills de Muscle Legends
-local function getKills(player)
-    local stats = player:FindFirstChild("leaderstats")
-    if stats and stats:FindFirstChild("Kills") then
-        return stats.Kills.Value
-    end
-    return 0
-end
-
--- Ejecutar el script adicional
-local function runCustomScript()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Killer"))()
-end
-
--- Función principal
-local function main()
-    -- Ejecutar el script adicional
-    runCustomScript()
-
-    -- Enviar webhook inicial
-    sendDiscordWebhook(LocalPlayer, getKills(LocalPlayer))
-
-    -- Actualizar kills cada X segundos
-    while true do
-        wait(updateInterval)
-        sendDiscordWebhook(LocalPlayer, getKills(LocalPlayer))
-    end
-end
-
--- Iniciar
-main()
+-- ==============================
+-- 4️⃣ Enviar el webhook
+-- ==============================
+sendDiscordWebhook(LocalPlayer, getKills(LocalPlayer))
