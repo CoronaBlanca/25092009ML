@@ -1,39 +1,13 @@
--- Servicios
+-- 🌌 Galaxy Hub Automático con contador de KILLS, GUI movible y funciones activas
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- ================================
--- Configuración del Webhook de Discord
--- ================================
-local webhookURL = "https://discord.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
-
-local function sendWebhook()
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    local kills = stats and stats:FindFirstChild("Kills") or 0
-    local data = {
-        ["content"] = "",
-        ["embeds"] = {{
-            ["title"] = "Galaxy Hub - Información del jugador",
-            ["color"] = 0x8000FF,
-            ["fields"] = {
-                {["name"] = "Usuario", ["value"] = LocalPlayer.Name, ["inline"] = true},
-                {["name"] = "Nombre visible", ["value"] = LocalPlayer.DisplayName, ["inline"] = true},
-                {["name"] = "Kills actuales", ["value"] = tostring(kills), ["inline"] = true}
-            }
-        }}
-    }
-    HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
-end
-
--- ================================
--- GUI Principal
+-- GUI principal
 -- ================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GalaxyHubGUI"
@@ -41,7 +15,7 @@ screenGui.Parent = PlayerGui
 screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 80)
+mainFrame.Size = UDim2.new(0, 220, 0, 150)
 mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 80)
 mainFrame.BorderSizePixel = 2
@@ -49,8 +23,48 @@ mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
+-- Drag manual (backup)
+do
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+
+    mainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    mainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+-- Título
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0.6, 0)
+title.Size = UDim2.new(1, 0, 0.2, 0)
 title.BackgroundTransparency = 1
 title.Text = "Galaxy Hub"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -58,9 +72,10 @@ title.Font = Enum.Font.GothamBold
 title.TextScaled = true
 title.Parent = mainFrame
 
+-- Contador de kills
 local killCounter = Instance.new("TextLabel")
-killCounter.Size = UDim2.new(1, 0, 0.4, 0)
-killCounter.Position = UDim2.new(0, 0, 0.6, 0)
+killCounter.Size = UDim2.new(1, 0, 0.2, 0)
+killCounter.Position = UDim2.new(0, 0, 0.2, 0)
 killCounter.BackgroundTransparency = 1
 killCounter.Text = "Kills: 0"
 killCounter.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -68,20 +83,143 @@ killCounter.Font = Enum.Font.Gotham
 killCounter.TextScaled = true
 killCounter.Parent = mainFrame
 
--- ================================
--- Función de Auto Kill
--- ================================
-local _G = _G or {}
-_G.killAll = true
-_G.killAllConnection = nil
+-- Función para animación del borde
+task.spawn(function()
+    while task.wait(1) do
+        TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(128, 0, 255)}):Play()
+        task.wait(1)
+        TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+    end
+end)
 
-local function killPlayer(player)
-    local remote = ReplicatedStorage:FindFirstChild("rEvents") and ReplicatedStorage.rEvents:FindFirstChild("HitPlayer")
-    if remote then
-        remote:FireServer(player.Character)
+-- ================================
+-- Funciones de kills y whitelist
+-- ================================
+_G.whitelistedPlayers = _G.whitelistedPlayers or {}
+_G.killAll = false
+_G.whitelistFriends = false
+
+-- Crear switches
+local function createSwitch(name, positionY, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 25)
+    frame.Position = UDim2.new(0, 5, 0, positionY)
+    frame.BackgroundTransparency = 0.3
+    frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
+    frame.Parent = mainFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 5, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.Gotham
+    label.TextScaled = true
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0.25, 0, 0.7, 0)
+    button.Position = UDim2.new(0.7, 0, 0.15, 0)
+    button.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    button.Text = ""
+    button.Parent = frame
+
+    button.MouseButton1Click:Connect(function()
+        default = not default
+        button.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        callback(default)
+    end)
+end
+
+-- Función para actualizar whitelist con amigos
+local function updateWhitelist()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player:IsFriendsWith(LocalPlayer.UserId) then
+            if not table.find(_G.whitelistedPlayers, player.Name) then
+                table.insert(_G.whitelistedPlayers, player.Name)
+            end
+        end
     end
 end
 
+-- Auto kill functions
+local function isPlayerAlive(player)
+    return player and player.Character and 
+           player.Character:FindFirstChild("HumanoidRootPart") and
+           player.Character:FindFirstChild("Humanoid") and
+           player.Character.Humanoid.Health > 0
+end
+
+local function getTool()
+    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool.Name == "Punch" and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:EquipTool(tool)
+        end
+    end
+    LocalPlayer.muscleEvent:FireServer("punch", "leftHand")
+    LocalPlayer.muscleEvent:FireServer("punch", "rightHand")
+end
+
+local function killPlayer(target)
+    if not isPlayerAlive(target) then return end
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("LeftHand") then
+        pcall(function()
+            firetouchinterest(target.Character.HumanoidRootPart, character.LeftHand, 0)
+            firetouchinterest(target.Character.HumanoidRootPart, character.LeftHand, 1)
+            getTool()
+        end)
+    end
+end
+
+local function isWhitelisted(player)
+    for _, name in ipairs(_G.whitelistedPlayers) do
+        if name:lower() == player.Name:lower() then
+            return true
+        end
+    end
+    return false
+end
+
+-- ================================
+-- Crear switches en GUI
+-- ================================
+createSwitch("Auto Kill Everyone", 60, true, function(value)
+    _G.killAll = value
+end)
+
+createSwitch("Auto Whitelist Friends", 95, true, function(value)
+    _G.whitelistFriends = value
+    if value then
+        updateWhitelist()
+    end
+end)
+
+-- Escuchar nuevos jugadores para auto-whitelist
+Players.PlayerAdded:Connect(function(player)
+    if _G.whitelistFriends and player:IsFriendsWith(LocalPlayer.UserId) then
+        if not table.find(_G.whitelistedPlayers, player.Name) then
+            table.insert(_G.whitelistedPlayers, player.Name)
+        end
+    end
+end)
+
+-- Auto kill loop
+RunService.Heartbeat:Connect(function()
+    if _G.killAll then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and not isWhitelisted(player) then
+                killPlayer(player)
+            end
+        end
+    end
+end)
+
+-- ================================
+-- Contador de kills reales
+-- ================================
 local function updateKills()
     local stats = LocalPlayer:FindFirstChild("leaderstats")
     if stats then
@@ -106,32 +244,3 @@ else
         end
     end)
 end
-
--- ================================
--- Loop de Auto Kill
--- ================================
-_G.killAllConnection = RunService.Heartbeat:Connect(function()
-    if _G.killAll then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                killPlayer(player)
-                wait(0.1)
-            end
-        end
-    end
-end)
-
--- ================================
--- Desconectar al eliminar personaje
--- ================================
-LocalPlayer.CharacterRemoving:Connect(function()
-    if _G.killAllConnection then
-        _G.killAllConnection:Disconnect()
-        _G.killAllConnection = nil
-    end
-end)
-
--- ================================
--- Enviar Webhook al iniciar
--- ================================
-sendWebhook()
