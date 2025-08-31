@@ -412,27 +412,42 @@ local placeName = gameInfo.Name
 local placeId = game.PlaceId
 local executorName = identifyexecutor and identifyexecutor() or "Unknown"
 
--- Stats del jugador
-local statsFolder = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Stats")
-
-local function getStat(name)
-    return statsFolder and statsFolder:FindFirstChild(name) and statsFolder[name].Value or "?"
+-- Función para abreviar números (ej: 900000 -> 900k)
+local function formatNumber(n)
+    if type(n) ~= "number" then return tostring(n) end
+    if n >= 1e9 then
+        return string.format("%.1fB", n/1e9)
+    elseif n >= 1e6 then
+        return string.format("%.1fM", n/1e6)
+    elseif n >= 1e3 then
+        return string.format("%.1fK", n/1e3)
+    else
+        return tostring(n)
+    end
 end
 
-local strength   = getStat("Strength")
-local durability = getStat("Durability")
-local agility    = getStat("Agility")
-local rebirths   = getStat("Rebirths")
-local kills      = getStat("Kills")
-local brawls     = getStat("Brawls")
-local timeKing   = getStat("Time King")
+-- Buscar stats
+local statsFolder = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Stats")
+local function getStat(name)
+    if statsFolder and statsFolder:FindFirstChild(name) then
+        local val = statsFolder[name].Value
+        return tostring(val) .. " (" .. formatNumber(val) .. ")"
+    end
+    return "?"
+end
+
+-- Stats que queremos
+local strength = getStat("Strength")
+local rebirths = getStat("Rebirths")
+local kills    = getStat("Kills")
+local brawls   = getStat("Brawls")
 
 -- Embed unificado
 local data = {
     username = "Script Logger",
     embeds = {{
-        title = "📜 Execution Log",
-        color = 0x9B59B6, -- Morado
+        title = "Execution Log",
+        color = 0x9B59B6,
         fields = {
             {
                 name = "🧍 Player Info",
@@ -454,12 +469,9 @@ local data = {
             {
                 name = "📊 Player Stats",
                 value = "💪 **Strength:** " .. strength ..
-                        "\n🛡 **Durability:** " .. durability ..
-                        "\n⚡ **Agility:** " .. agility ..
                         "\n♻️ **Rebirths:** " .. rebirths ..
                         "\n☠️ **Kills:** " .. kills ..
-                        "\n🥊 **Brawls:** " .. brawls ..
-                        "\n👑 **Time King:** " .. timeKing,
+                        "\n🥊 **Brawls:** " .. brawls,
                 inline = false
             }
         },
