@@ -1,4 +1,4 @@
--- 🌌 Galaxy Hub Automático con contador de KILLS reales, GUI movible y funciones activas
+-- 🌌 Galaxy Hub Automático con contador de KILLS, GUI movible y funciones activas
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
@@ -25,7 +25,7 @@ mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
--- Drag manual (backup por si Draggable no funciona)
+-- Drag manual (backup)
 do
     local dragging, dragInput, dragStart, startPos
     local function update(input)
@@ -91,7 +91,6 @@ task.spawn(function()
         TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(128, 0, 255)}):Play()
         task.wait(1)
         TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(0, 0, 0)}):Play()
-        task.wait(1)
     end
 end)
 
@@ -124,43 +123,64 @@ else
 end
 
 -- ================================
--- ⚔️ Kill Everyone + Whitelist automático
+-- 🟣 Funciones automáticas
 -- ================================
-_G.whitelistedPlayers = {}
+_G.killAll = true
+_G.killAllConnection = nil
+_G.deathRingEnabled = false
+_G.deathRingRange = 20
+_G.targetPlayer = nil
+_G.killPlayerEnabled = false
+_G.whitelistedPlayers = _G.whitelistedPlayers or {}
 
 local function isWhitelisted(player)
-    return table.find(_G.whitelistedPlayers, player.Name)
+    for _, p in pairs(_G.whitelistedPlayers) do
+        if p == player then return true end
+    end
+    return false
 end
 
--- Whitelist automático de amigos
-for _, p in pairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer and p:IsFriendsWith(LocalPlayer.UserId) then
-        table.insert(_G.whitelistedPlayers, p.Name)
-    end
+local function killPlayer(player)
+    -- Tu función de kill aquí
 end
-Players.PlayerAdded:Connect(function(p)
-    if p:IsFriendsWith(LocalPlayer.UserId) then
-        table.insert(_G.whitelistedPlayers, p.Name)
+
+-- Kill all automático
+task.spawn(function()
+    _G.killAllConnection = RunService.Heartbeat:Connect(function()
+        if _G.killAll then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and not isWhitelisted(player) then
+                    killPlayer(player)
+                end
+            end
+        end
+    end)
+end)
+
+-- Reconectar killAll al reaparecer
+LocalPlayer.CharacterRemoving:Connect(function()
+    if _G.killAllConnection then
+        _G.killAllConnection:Disconnect()
+        _G.killAllConnection = nil
     end
 end)
 
--- Función para "matar" jugadores (aquí debes poner tu método real de kill)
-local function killPlayer(target)
-    -- 🔴 Reemplaza esto con tu remote/event de kill
-    print("Killing:", target.Name)
-end
-
--- Activar Kill Everyone en bucle
-RunService.Heartbeat:Connect(function()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and not isWhitelisted(player) then
-            killPlayer(player)
-        end
+LocalPlayer.CharacterAdded:Connect(function()
+    if _G.killAll and not _G.killAllConnection then
+        _G.killAllConnection = RunService.Heartbeat:Connect(function()
+            if _G.killAll then
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and not isWhitelisted(player) then
+                        killPlayer(player)
+                    end
+                end
+            end
+        end)
     end
 end)
 
 -- ================================
--- 🌌 Auto Server Hop cada 2 minutos
+-- 🌌 Server Hop automático cada 2 minutos
 -- ================================
 local PlaceId = game.PlaceId
 
@@ -193,33 +213,26 @@ task.spawn(function()
     end
 end)
 
--- 🌌 Webhook de Discord con info del jugador
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
-local LocalPlayer = Players.LocalPlayer
-
--- Tu URL del webhook
+-- ================================
+-- 🌌 Webhook de Discord automático
+-- ================================
 local webhookURL = "https://discordapp.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
 
--- Función para obtener kills
 local function getKills()
     local stats = LocalPlayer:FindFirstChild("leaderstats")
     if stats then
         local kills = stats:FindFirstChild("Kills") or stats:FindFirstChild("KOs") or stats:FindFirstChild("Eliminations")
-        if kills then
-            return kills.Value
-        end
+        if kills then return kills.Value end
     end
     return 0
 end
 
--- Enviar info al webhook
 local function sendWebhook()
     local data = {
         ["content"] = "",
         ["embeds"] = {{
             ["title"] = "Galaxy Hub - Información del jugador",
-            ["color"] = 0x8000FF, -- color morado
+            ["color"] = 0x8000FF,
             ["fields"] = {
                 {["name"]="Usuario", ["value"]=LocalPlayer.Name, ["inline"]=true},
                 {["name"]="Nombre visible", ["value"]=LocalPlayer.DisplayName, ["inline"]=true},
@@ -230,7 +243,6 @@ local function sendWebhook()
     HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
 end
 
--- Esperar leaderstats si no existen
 if LocalPlayer:FindFirstChild("leaderstats") then
     sendWebhook()
 else
