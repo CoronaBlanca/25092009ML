@@ -1,4 +1,4 @@
--- Galaxy Hub Mini GUI con animación de colores + contador de kills
+-- 🌌 Galaxy Hub Automático con contador de KILLS reales
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
@@ -14,8 +14,8 @@ screenGui.Parent = PlayerGui
 -- Crear Frame principal
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 220, 0, 80)
-mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0) -- centrado arriba
-mainFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 80) -- morado base
+mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 80)
 mainFrame.BorderSizePixel = 2
 mainFrame.Parent = screenGui
 
@@ -40,7 +40,7 @@ killCounter.Font = Enum.Font.Gotham
 killCounter.TextScaled = true
 killCounter.Parent = mainFrame
 
--- Animación de contorno (morado <-> negro)
+-- Animación de contorno
 task.spawn(function()
     while task.wait(1) do
         local tween1 = TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(128, 0, 255)})
@@ -54,65 +54,76 @@ task.spawn(function()
 end)
 
 -- ================================
--- Script que se ejecuta automáticamente
+-- 🟣 Contador de kills reales
 -- ================================
-task.spawn(function()
-    -- Variables globales
-    _G.whitelistedPlayers = _G.whitelistedPlayers or {}
-    _G.killAll = false
-    _G.whitelistFriends = false
-    _G.killCount = 0 -- contador de kills
-
-    -- Función auxiliar para verificar whitelist
-    function isWhitelisted(player)
-        for _, name in ipairs(_G.whitelistedPlayers) do
-            if name:lower() == player.Name:lower() then
-                return true
-            end
-        end
-        return false
-    end
-
-    -- ⚔️ Kill Everyone automático
-    _G.killAll = true
-    if not _G.killAllConnection then
-        _G.killAllConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            if _G.killAll then
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and not isWhitelisted(player) then
-                        if killPlayer then
-                            killPlayer(player) -- tu función personalizada
-                            _G.killCount = _G.killCount + 1
-                            killCounter.Text = "Kills: " .. tostring(_G.killCount)
-                        end
-                    end
-                end
-            end
-        end)
-    end
-
-    -- ✅ Whitelist Friends automático
-    _G.whitelistFriends = true
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player:IsFriendsWith(LocalPlayer.UserId) then
-            table.insert(_G.whitelistedPlayers, player.Name)
+local function updateKills()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    if stats then
+        local kills = stats:FindFirstChild("Kills") or stats:FindFirstChild("KOs") or stats:FindFirstChild("Eliminations")
+        if kills then
+            killCounter.Text = "Kills: " .. tostring(kills.Value)
+            kills:GetPropertyChangedSignal("Value"):Connect(function()
+                killCounter.Text = "Kills: " .. tostring(kills.Value)
+            end)
+        else
+            killCounter.Text = "Kills: (no detectado)"
         end
     end
+end
 
-    Players.PlayerAdded:Connect(function(player)
-        if _G.whitelistFriends and player:IsFriendsWith(LocalPlayer.UserId) then
-            table.insert(_G.whitelistedPlayers, player.Name)
+-- Esperar a que exista leaderstats
+if LocalPlayer:FindFirstChild("leaderstats") then
+    updateKills()
+else
+    LocalPlayer.ChildAdded:Connect(function(child)
+        if child.Name == "leaderstats" then
+            updateKills()
         end
     end)
+end
 
-    print("✅ Galaxy Hub iniciado: Kill Everyone + Whitelist Friends + Kill Counter")
+-- ================================
+-- ⚔️ Kill Everyone + Whitelist automático
+-- ================================
+_G.whitelistedPlayers = {}
+
+local function isWhitelisted(player)
+    for _, name in ipairs(_G.whitelistedPlayers) do
+        if name:lower() == player.Name:lower() then
+            return true
+        end
+    end
+    return false
+end
+
+-- agregar amigos a whitelist
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer and player:IsFriendsWith(LocalPlayer.UserId) then
+        table.insert(_G.whitelistedPlayers, player.Name)
+    end
+end
+Players.PlayerAdded:Connect(function(player)
+    if player:IsFriendsWith(LocalPlayer.UserId) then
+        table.insert(_G.whitelistedPlayers, player.Name)
+    end
+end)
+
+-- Auto Kill
+game:GetService("RunService").Heartbeat:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and not isWhitelisted(player) then
+            if killPlayer then
+                killPlayer(player) -- tu función de matar
+            end
+        end
+    end
 end)
 
 -- ================================
--- 🌌 Auto Server Hop (cada 2 minutos)
+-- 🌌 Auto Server Hop cada 2 minutos
 -- ================================
 task.spawn(function()
-    while task.wait(120) do -- cada 120 segundos
+    while task.wait(120) do
         local success, result = pcall(function()
             return game:HttpGet(
                 "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
@@ -121,15 +132,11 @@ task.spawn(function()
 
         if success and result then
             local data = HttpService:JSONDecode(result)
-            local bestServer = nil
-            local mostPlayers = 0
+            local bestServer, mostPlayers = nil, 0
 
             for _, server in ipairs(data.data) do
-                local count = server.playing
-                local id = server.id
-                if id ~= game.JobId and count > mostPlayers and count < server.maxPlayers then
-                    bestServer = id
-                    mostPlayers = count
+                if server.id ~= game.JobId and server.playing > mostPlayers and server.playing < server.maxPlayers then
+                    bestServer, mostPlayers = server.id, server.playing
                 end
             end
 
@@ -137,8 +144,6 @@ task.spawn(function()
                 print("🌌 Server Hop → " .. bestServer .. " con " .. mostPlayers .. " jugadores")
                 TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
             end
-        else
-            warn("No se pudo obtener lista de servidores")
         end
     end
 end)
