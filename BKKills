@@ -1,37 +1,53 @@
--- Servicios
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
 
--- Configuración del Webhook
 local webhookURL = "https://discordapp.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
 
--- Función para enviar mensaje al webhook
+-- Función para enviar webhook usando syn.request
 local function sendDiscordWebhook(player, kills)
+    if not webhookURL then return end
+
     local data = {
         ["content"] = "",
         ["embeds"] = {{
             ["title"] = "Jugador ejecutó el script",
             ["description"] = string.format("**User:** %s\n**Display Name:** %s\n**Kills:** %d", player.Name, player.DisplayName, kills),
-            ["color"] = 0x00ff00
+            ["color"] = 65280
         }}
     }
 
-    local jsonData = HttpService:JSONEncode(data)
-    HttpService:PostAsync(webhookURL, jsonData, Enum.HttpContentType.ApplicationJson)
+    local jsonData = game:GetService("HttpService"):JSONEncode(data)
+
+    if syn then
+        syn.request({
+            Url = webhookURL,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = jsonData
+        })
+    else
+        print("Necesitas Synapse u otro exploit compatible con requests HTTP")
+    end
 end
 
--- Función principal al ejecutar el script
-local function onScriptExecute(player)
-    -- Obtener kills
-    local kills = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Kills") and player.leaderstats.Kills.Value or 0
+-- Obtener kills de Muscle Legends
+local function getKills(player)
+    -- Reemplaza esto con la ruta correcta si no es leaderstats
+    local stats = player:FindFirstChild("leaderstats")
+    if stats and stats:FindFirstChild("Kills") then
+        return stats.Kills.Value
+    end
+    return 0
+end
 
-    -- Enviar webhook
+-- Ejecutar script principal
+local function execute(player)
+    local kills = getKills(player)
     sendDiscordWebhook(player, kills)
 
     -- Ejecutar tu script adicional
     loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Killer"))()
 end
 
--- Ejecutar al jugador local
-local LocalPlayer = Players.LocalPlayer
-onScriptExecute(LocalPlayer)
+execute(LocalPlayer)
+
