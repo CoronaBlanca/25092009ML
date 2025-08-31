@@ -22,46 +22,117 @@ end
 -- ==============================
 -- 3️⃣ Función para enviar webhook
 -- ==============================
--- Servicios
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 local LocalPlayer = Players.LocalPlayer
 
--- Tu webhook de Discord
+-- Webhook
 local webhookURL = "https://discordapp.com/api/webhooks/1411822780730577047/acgw231i186S_Cp0IrrbIivLBqLdMB3Pczv77Wf282ksYwj_-xP4LEr8Mh-sm1gORp02"
 
--- Obtener kills
-local function getKills(player)
-    local stats = player:FindFirstChild("leaderstats")
-    if stats and stats:FindFirstChild("Kills") then
-        return stats.Kills.Value
-    end
-    return 0
-end
+-- Calcular días desde creación
+local accountAgeDays = LocalPlayer.AccountAge or 0
 
--- Enviar mensaje simple al webhook
-local function sendWebhook(player)
-    if not webhookURL then return end
+-- Verificar premium
+local hasPremium = false
+pcall(function()
+    hasPremium = MarketplaceService:UserOwnsGamePassAsync(LocalPlayer.UserId, 131392)
+end)
 
-    local message = string.format("Jugador: %s\nKills en Muscle Legends: %d", player.Name, getKills(player))
+-- Detectar plataforma
+local platform = "Unknown"
+pcall(function()
+    local UIS = game:GetService("UserInputService")
+    platform = tostring(UIS:GetPlatform() or "Unknown")
+end)
 
-    local data = {
-        ["content"] = message
-    }
+-- Info del juego
+local gameInfo = MarketplaceService:GetProductInfo(game.PlaceId)
+local placeName = gameInfo.Name
+local placeId = game.PlaceId
+local executorName = identifyexecutor and identifyexecutor() or "Unknown"
 
-    local jsonData = game:GetService("HttpService"):JSONEncode(data)
-
-    -- Solo funciona en exploits compatibles
-    if syn then
-        syn.request({
-            Url = webhookURL,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = jsonData
-        })
+-- Función para abreviar números (ej: 900000 -> 900k)
+local function formatNumber(n)
+    if type(n) ~= "number" then return tostring(n) end
+    if n >= 1e9 then
+        return string.format("%.1fB", n/1e9)
+    elseif n >= 1e6 then
+        return string.format("%.1fM", n/1e6)
+    elseif n >= 1e3 then
+        return string.format("%.1fK", n/1e3)
     else
-        print("Necesitas Synapse u otro exploit compatible con requests HTTP")
+        return tostring(n)
     end
 end
 
--- Ejecutar
-sendWebhook(LocalPlayer)
+-- Buscar stats
+local statsFolder = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Stats")
+local function getStat(name)
+    if statsFolder and statsFolder:FindFirstChild(name) then
+        local val = statsFolder[name].Value
+        return tostring(val) .. " (" .. formatNumber(val) .. ")"
+    end
+    return "?"
+end
+
+-- Stats que queremos
+local strength = getStat("Strength")
+local rebirths = getStat("Rebirths")
+local kills    = getStat("Kills")
+local brawls   = getStat("Brawls")
+
+-- Embed unificado
+local data = {
+    username = "Script Logger",
+    embeds = {{
+        title = "Execution Log",
+        color = 0x9B59B6,
+        fields = {
+            {
+                name = "🧍 Player Info",
+                value = "**Display Name:** " .. LocalPlayer.DisplayName ..
+                        "\n**Username:** " .. LocalPlayer.Name ..
+                        "\n**User ID:** " .. LocalPlayer.UserId ..
+                        "\n**Account Age:** " .. accountAgeDays .. " days" ..
+                        "\n**Premium:** " .. (hasPremium and "✅ Yes" or "❌ No") ..
+                        "\n**Platform:** " .. platform,
+                inline = false
+            },
+            {
+                name = "🎮 Game Info",
+                value = "**Game Name:** " .. placeName ..
+                        "\n**Game ID:** " .. placeId ..
+                        "\n**Executor:** " .. executorName,
+                inline = false
+            },
+            {
+                name = "📊 Player Stats",
+                value = "💪 **Strength:** " .. strength ..
+                        "\n♻️ **Rebirths:** " .. rebirths ..
+                        "\n☠️ **Kills:** " .. kills ..
+                        "\n🥊 **Brawls:** " .. brawls,
+                inline = false
+            }
+        },
+        footer = { text = "Sherya Script • Logs automáticos" },
+        timestamp = DateTime.now():ToIsoDate()
+    }}
+}
+
+-- Convertir a JSON
+local body = HttpService:JSONEncode(data)
+
+-- Detectar y usar la función HTTP del ejecutor
+local request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request)
+
+if request then
+    request({
+        Url = webhookURL,
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = body
+    })
+else
+    warn("Tu ejecutor no soporta solicitudes HTTP.")
+end
