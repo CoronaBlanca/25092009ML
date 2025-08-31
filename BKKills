@@ -22,22 +22,35 @@ end
 -- ==============================
 -- 3️⃣ Función para enviar webhook
 -- ==============================
-local function sendDiscordWebhook(player, kills)
-    local webhookURL = "https://discordapp.com/api/webhooks/1411822780730577047/acgw231i186S_Cp0IrrbIivLBqLdMB3Pczv77Wf282ksYwj_-xP4LEr8Mh-sm1gORp02" -- <<<<< PON TU WEBHOOK AQUÍ
+-- Servicios
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Tu webhook de Discord
+local webhookURL = "https://discordapp.com/api/webhooks/1411822780730577047/acgw231i186S_Cp0IrrbIivLBqLdMB3Pczv77Wf282ksYwj_-xP4LEr8Mh-sm1gORp02"
+
+-- Obtener kills
+local function getKills(player)
+    local stats = player:FindFirstChild("leaderstats")
+    if stats and stats:FindFirstChild("Kills") then
+        return stats.Kills.Value
+    end
+    return 0
+end
+
+-- Enviar mensaje simple al webhook
+local function sendWebhook(player)
     if not webhookURL then return end
 
+    local message = string.format("Jugador: %s\nKills en Muscle Legends: %d", player.Name, getKills(player))
+
     local data = {
-        ["content"] = "",
-        ["embeds"] = {{
-            ["title"] = "Jugador ejecutó el script",
-            ["description"] = string.format("**User:** %s\n**Display Name:** %s\n**Kills:** %d", player.Name, player.DisplayName, kills),
-            ["color"] = 65280 -- Verde
-        }}
+        ["content"] = message
     }
 
-    local jsonData = HttpService:JSONEncode(data)
+    local jsonData = game:GetService("HttpService"):JSONEncode(data)
 
-    -- Solo funciona en Synapse/KRNL o exploits compatibles
+    -- Solo funciona en exploits compatibles
     if syn then
         syn.request({
             Url = webhookURL,
@@ -50,7 +63,5 @@ local function sendDiscordWebhook(player, kills)
     end
 end
 
--- ==============================
--- 4️⃣ Enviar el webhook
--- ==============================
-sendDiscordWebhook(LocalPlayer, getKills(LocalPlayer))
+-- Ejecutar
+sendWebhook(LocalPlayer)
