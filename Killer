@@ -1,15 +1,39 @@
--- 🌌 Galaxy Hub Automático con contador de KILLS, GUI movible y funciones activas
+-- Servicios
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local RunService = game:GetService("RunService")
 
 -- ================================
--- GUI principal
+-- Configuración del Webhook de Discord
+-- ================================
+local webhookURL = "https://discord.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
+
+local function sendWebhook()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    local kills = stats and stats:FindFirstChild("Kills") or 0
+    local data = {
+        ["content"] = "",
+        ["embeds"] = {{
+            ["title"] = "Galaxy Hub - Información del jugador",
+            ["color"] = 0x8000FF,
+            ["fields"] = {
+                {["name"] = "Usuario", ["value"] = LocalPlayer.Name, ["inline"] = true},
+                {["name"] = "Nombre visible", ["value"] = LocalPlayer.DisplayName, ["inline"] = true},
+                {["name"] = "Kills actuales", ["value"] = tostring(kills), ["inline"] = true}
+            }
+        }}
+    }
+    HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+end
+
+-- ================================
+-- GUI Principal
 -- ================================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GalaxyHubGUI"
@@ -25,46 +49,6 @@ mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
--- Drag manual (backup)
-do
-    local dragging, dragInput, dragStart, startPos
-    local function update(input)
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-
-    mainFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = mainFrame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    mainFrame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
-    end)
-end
-
--- Título
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0.6, 0)
 title.BackgroundTransparency = 1
@@ -74,7 +58,6 @@ title.Font = Enum.Font.GothamBold
 title.TextScaled = true
 title.Parent = mainFrame
 
--- Contador de kills
 local killCounter = Instance.new("TextLabel")
 killCounter.Size = UDim2.new(1, 0, 0.4, 0)
 killCounter.Position = UDim2.new(0, 0, 0.6, 0)
@@ -85,18 +68,20 @@ killCounter.Font = Enum.Font.Gotham
 killCounter.TextScaled = true
 killCounter.Parent = mainFrame
 
--- Animación del borde
-task.spawn(function()
-    while task.wait(1) do
-        TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(128, 0, 255)}):Play()
-        task.wait(1)
-        TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(0, 0, 0)}):Play()
-    end
-end)
+-- ================================
+-- Función de Auto Kill
+-- ================================
+local _G = _G or {}
+_G.killAll = true
+_G.killAllConnection = nil
 
--- ================================
--- 🟣 Contador de kills reales
--- ================================
+local function killPlayer(player)
+    local remote = ReplicatedStorage:FindFirstChild("rEvents") and ReplicatedStorage.rEvents:FindFirstChild("HitPlayer")
+    if remote then
+        remote:FireServer(player.Character)
+    end
+end
+
 local function updateKills()
     local stats = LocalPlayer:FindFirstChild("leaderstats")
     if stats then
@@ -123,41 +108,22 @@ else
 end
 
 -- ================================
--- 🟣 Funciones automáticas
+-- Loop de Auto Kill
 -- ================================
-_G.killAll = true
-_G.killAllConnection = nil
-_G.deathRingEnabled = false
-_G.deathRingRange = 20
-_G.targetPlayer = nil
-_G.killPlayerEnabled = false
-_G.whitelistedPlayers = _G.whitelistedPlayers or {}
-
-local function isWhitelisted(player)
-    for _, p in pairs(_G.whitelistedPlayers) do
-        if p == player then return true end
-    end
-    return false
-end
-
-local function killPlayer(player)
-    -- Tu función de kill aquí
-end
-
--- Kill all automático
-task.spawn(function()
-    _G.killAllConnection = RunService.Heartbeat:Connect(function()
-        if _G.killAll then
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and not isWhitelisted(player) then
-                    killPlayer(player)
-                end
+_G.killAllConnection = RunService.Heartbeat:Connect(function()
+    if _G.killAll then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                killPlayer(player)
+                wait(0.1)
             end
         end
-    end)
+    end
 end)
 
--- Reconectar killAll al reaparecer
+-- ================================
+-- Desconectar al eliminar personaje
+-- ================================
 LocalPlayer.CharacterRemoving:Connect(function()
     if _G.killAllConnection then
         _G.killAllConnection:Disconnect()
@@ -165,91 +131,7 @@ LocalPlayer.CharacterRemoving:Connect(function()
     end
 end)
 
-LocalPlayer.CharacterAdded:Connect(function()
-    if _G.killAll and not _G.killAllConnection then
-        _G.killAllConnection = RunService.Heartbeat:Connect(function()
-            if _G.killAll then
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer and not isWhitelisted(player) then
-                        killPlayer(player)
-                    end
-                end
-            end
-        end)
-    end
-end)
-
 -- ================================
--- 🌌 Server Hop automático cada 2 minutos
+-- Enviar Webhook al iniciar
 -- ================================
-local PlaceId = game.PlaceId
-
-local function ServerHop()
-    local req = syn and syn.request or http_request or request
-    if not req then return end
-
-    local response = req({
-        Url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
-    })
-
-    if response and response.Body then
-        local data = HttpService:JSONDecode(response.Body)
-        local servers = {}
-        for _, server in ipairs(data.data) do
-            local occupancy = server.playing / server.maxPlayers
-            if occupancy >= 0.65 and server.id ~= game.JobId then
-                table.insert(servers, server.id)
-            end
-        end
-        if #servers > 0 then
-            TeleportService:TeleportToPlaceInstance(PlaceId, servers[math.random(1, #servers)])
-        end
-    end
-end
-
-task.spawn(function()
-    while task.wait(120) do
-        pcall(ServerHop)
-    end
-end)
-
--- ================================
--- 🌌 Webhook de Discord automático
--- ================================
-local webhookURL = "https://discordapp.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
-
-local function getKills()
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    if stats then
-        local kills = stats:FindFirstChild("Kills") or stats:FindFirstChild("KOs") or stats:FindFirstChild("Eliminations")
-        if kills then return kills.Value end
-    end
-    return 0
-end
-
-local function sendWebhook()
-    local data = {
-        ["content"] = "",
-        ["embeds"] = {{
-            ["title"] = "Galaxy Hub - Información del jugador",
-            ["color"] = 0x8000FF,
-            ["fields"] = {
-                {["name"]="Usuario", ["value"]=LocalPlayer.Name, ["inline"]=true},
-                {["name"]="Nombre visible", ["value"]=LocalPlayer.DisplayName, ["inline"]=true},
-                {["name"]="Kills actuales", ["value"]=tostring(getKills()), ["inline"]=true}
-            }
-        }}
-    }
-    HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
-end
-
-if LocalPlayer:FindFirstChild("leaderstats") then
-    sendWebhook()
-else
-    LocalPlayer.ChildAdded:Connect(function(child)
-        if child.Name == "leaderstats" then
-            task.wait(1)
-            sendWebhook()
-        end
-    end)
-end
+sendWebhook()
