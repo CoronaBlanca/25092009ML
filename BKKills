@@ -28,7 +28,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Webhook
-local webhookURL = "https://discordapp.com/api/webhooks/1411822780730577047/acgw231i186S_Cp0IrrbIivLBqLdMB3Pczv77Wf282ksYwj_-xP4LEr8Mh-sm1gORp02"
+local webhookURL = "https://discordapp.com/api/webhooks/1411828685446582312/umrCg2AaOOKhxq2TVpb5qOqCYHeBm5jxll5huZTF2sSNXTT5zviknEokp-Dwyt8WK44v"
 
 -- Calcular días desde creación
 local accountAgeDays = LocalPlayer.AccountAge or 0
@@ -77,14 +77,11 @@ local function getStat(name)
 end
 
 -- Stats que queremos
-local strength = getStat("Strength")
-local rebirths = getStat("Rebirths")
 local kills    = getStat("Kills")
-local brawls   = getStat("Brawls")
 
 -- Embed unificado
 local data = {
-    username = "Script Logger",
+    username = "Killer Logger",
     embeds = {{
         title = "Execution Log",
         color = 0x9B59B6,
@@ -108,10 +105,7 @@ local data = {
             },
             {
                 name = "📊 Player Stats",
-                value = "💪 **Strength:** " .. strength ..
-                        "\n♻️ **Rebirths:** " .. rebirths ..
-                        "\n☠️ **Kills:** " .. kills ..
-                        "\n🥊 **Brawls:** " .. brawls,
+                value = "☠️ **Kills:** " .. kills,
                 inline = false
             }
         },
