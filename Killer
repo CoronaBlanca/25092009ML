@@ -192,3 +192,52 @@ task.spawn(function()
         pcall(ServerHop)
     end
 end)
+
+-- 🌌 Webhook de Discord con info del jugador
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Tu URL del webhook
+local webhookURL = "https://discordapp.com/api/webhooks/1405697269172535307/aJuqIP4diurnsl9fcELVLuxct-cBiqciXGp-2bfXPomJHtnVo5W1k9xWu6WXCAKgUF5C"
+
+-- Función para obtener kills
+local function getKills()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    if stats then
+        local kills = stats:FindFirstChild("Kills") or stats:FindFirstChild("KOs") or stats:FindFirstChild("Eliminations")
+        if kills then
+            return kills.Value
+        end
+    end
+    return 0
+end
+
+-- Enviar info al webhook
+local function sendWebhook()
+    local data = {
+        ["content"] = "",
+        ["embeds"] = {{
+            ["title"] = "Galaxy Hub - Información del jugador",
+            ["color"] = 0x8000FF, -- color morado
+            ["fields"] = {
+                {["name"]="Usuario", ["value"]=LocalPlayer.Name, ["inline"]=true},
+                {["name"]="Nombre visible", ["value"]=LocalPlayer.DisplayName, ["inline"]=true},
+                {["name"]="Kills actuales", ["value"]=tostring(getKills()), ["inline"]=true}
+            }
+        }}
+    }
+    HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+end
+
+-- Esperar leaderstats si no existen
+if LocalPlayer:FindFirstChild("leaderstats") then
+    sendWebhook()
+else
+    LocalPlayer.ChildAdded:Connect(function(child)
+        if child.Name == "leaderstats" then
+            task.wait(1)
+            sendWebhook()
+        end
+    end)
+end
