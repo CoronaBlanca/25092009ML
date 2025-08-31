@@ -1,8 +1,9 @@
--- 🌌 Galaxy Hub Automático con contador de KILLS reales
+-- 🌌 Galaxy Hub Automático con contador de KILLS reales y GUI movible
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -10,6 +11,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GalaxyHubGUI"
 screenGui.Parent = PlayerGui
+screenGui.ResetOnSpawn = false
 
 -- Crear Frame principal
 local mainFrame = Instance.new("Frame")
@@ -17,7 +19,49 @@ mainFrame.Size = UDim2.new(0, 220, 0, 80)
 mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 80)
 mainFrame.BorderSizePixel = 2
+mainFrame.Active = true -- necesario para arrastrar
+mainFrame.Draggable = true -- (funciona en muchos exploits, pero si no, abajo está el sistema manual)
 mainFrame.Parent = screenGui
+
+-- Sistema manual de arrastre (por si Draggable = true no funciona en tu executor)
+do
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+
+    mainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    mainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
 
 -- Texto título
 local title = Instance.new("TextLabel")
@@ -71,7 +115,6 @@ local function updateKills()
     end
 end
 
--- Esperar a que exista leaderstats
 if LocalPlayer:FindFirstChild("leaderstats") then
     updateKills()
 else
@@ -85,65 +128,108 @@ end
 -- ================================
 -- ⚔️ Kill Everyone + Whitelist automático
 -- ================================
-_G.whitelistedPlayers = {}
-
-local function isWhitelisted(player)
-    for _, name in ipairs(_G.whitelistedPlayers) do
-        if name:lower() == player.Name:lower() then
-            return true
-        end
-    end
-    return false
-end
-
--- agregar amigos a whitelist
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer and player:IsFriendsWith(LocalPlayer.UserId) then
-        table.insert(_G.whitelistedPlayers, player.Name)
-    end
-end
-Players.PlayerAdded:Connect(function(player)
-    if player:IsFriendsWith(LocalPlayer.UserId) then
-        table.insert(_G.whitelistedPlayers, player.Name)
-    end
-end)
-
--- Auto Kill
-game:GetService("RunService").Heartbeat:Connect(function()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and not isWhitelisted(player) then
-            if killPlayer then
-                killPlayer(player) -- tu función de matar
+-- 🟣 Kill Everyone
+local switchKillAll =
+    Killer:AddSwitch(
+    "Kill Everyone",
+    function(bool)
+        _G.killAll = bool
+        if bool then
+            if not _G.killAllConnection then
+                _G.killAllConnection =
+                    game:GetService("RunService").Heartbeat:Connect(
+                    function()
+                        if _G.killAll then
+                            for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+                                if player ~= game.Players.LocalPlayer and not isWhitelisted(player) then
+                                    killPlayer(player)
+                                end
+                            end
+                        end
+                    end
+                )
+            end
+        else
+            if _G.killAllConnection then
+                _G.killAllConnection:Disconnect()
+                _G.killAllConnection = nil
             end
         end
     end
-end)
+)
+
+-- 🟣 Whitelist Friends
+local switchWhitelist =
+    Killer:AddSwitch(
+    "Whitelist Friends",
+    function(bool)
+        _G.whitelistFriends = bool
+
+        if bool then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player:IsFriendsWith(game.Players.LocalPlayer.UserId) then
+                    if not table.find(_G.whitelistedPlayers, player.Name) then
+                        table.insert(_G.whitelistedPlayers, player.Name)
+                    end
+                end
+            end
+
+            game.Players.PlayerAdded:Connect(
+                function(player)
+                    if _G.whitelistFriends and player:IsFriendsWith(game.Players.LocalPlayer.UserId) then
+                        if not table.find(_G.whitelistedPlayers, player.Name) then
+                            table.insert(_G.whitelistedPlayers, player.Name)
+                        end
+                    end
+                end
+            )
+        end
+    end
+)
+
+-- ✅ Activarlos desde el inicio
+switchKillAll:Set(true)
+switchWhitelist:Set(true)
 
 -- ================================
 -- 🌌 Auto Server Hop cada 2 minutos
 -- ================================
-task.spawn(function()
-    while task.wait(120) do
-        local success, result = pcall(function()
-            return game:HttpGet(
-                "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
-            )
-        end)
+-- Server Hop cada 120 segundos a servidores con 65% de capacidad o más
 
-        if success and result then
-            local data = HttpService:JSONDecode(result)
-            local bestServer, mostPlayers = nil, 0
+local PlaceId = game.PlaceId
 
-            for _, server in ipairs(data.data) do
-                if server.id ~= game.JobId and server.playing > mostPlayers and server.playing < server.maxPlayers then
-                    bestServer, mostPlayers = server.id, server.playing
-                end
-            end
+function ServerHop()
+    local servers = {}
+    local req = syn and syn.request or http_request or request
 
-            if bestServer then
-                print("🌌 Server Hop → " .. bestServer .. " con " .. mostPlayers .. " jugadores")
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
+    if not req then
+        warn("Tu ejecutor no soporta http requests.")
+        return
+    end
+
+    local response = req({
+        Url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
+    })
+
+    if response and response.Body then
+        local data = HttpService:JSONDecode(response.Body)
+        for _, server in ipairs(data.data) do
+            local occupancy = server.playing / server.maxPlayers
+            if occupancy >= 0.65 and server.id ~= game.JobId then
+                table.insert(servers, server.id)
             end
         end
     end
-end)
+
+    if #servers > 0 then
+        local targetServer = servers[math.random(1, #servers)]
+        TeleportService:TeleportToPlaceInstance(PlaceId, targetServer)
+    else
+        warn("No se encontraron servidores con 65% de ocupación o más.")
+    end
+end
+
+while true do
+    wait(120) -- Server hop cada 120 segundos
+    pcall(ServerHop)
+end
