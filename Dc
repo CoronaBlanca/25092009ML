@@ -1,16 +1,16 @@
-local buttonNames = {"Elerium", "Fluent", "Dr-ray", "Pack Farm"}
+local buttonNames = {"Elerium V5", "FLUENT UI", "Dr Ray", "Packs Farm"}
 local scripts = {
     [1] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Sherya-Script-Private/Muscle-legends/refs/heads/main/Elerium%20V2"))()("Sherya Scripts: Script 1 ejecutado")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Elerium-V5"))()("Sherya Scripts: Script 1 ejecutado")
     ]],
     [2] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Sherya-Script-Private/Muscle-legends/refs/heads/main/Fluent"))()("Sherya Scripts: Script 2 ejecutado")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/FLUENT"))()("Sherya Scripts: Script 2 ejecutado")
     ]],
     [3] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Sherya-Script-Private/Muscle-legends/refs/heads/main/Dr-Ray"))()("Sherya Scripts: Script 3 ejecutado")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Dr-Ray"))()("Sherya Scripts: Script 3 ejecutado")
     ]],
     [4] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Sherya-Script-Private/Muscle-legends/refs/heads/main/Sherya%20GUI"))()("Sherya Scripts: Script 4 ejecutado")
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Farm-Packs"))()("Sherya Scripts: Script 4 ejecutado")
     ]],
 }
 
@@ -126,7 +126,7 @@ Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 70)
 Title.Position = UDim2.new(0, 0, 0, 10)
 Title.BackgroundTransparency = 1
-Title.Text = " Sherya Script "
+Title.Text = "💖 Galaxy Hub 💖"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 28
@@ -139,7 +139,7 @@ Subtitle.Parent = MainFrame
 Subtitle.Size = UDim2.new(1, 0, 0, 25)
 Subtitle.Position = UDim2.new(0, 0, 0, 65)
 Subtitle.BackgroundTransparency = 1
-Subtitle.Text = "✨ Elige tu script favorito ✨"
+Subtitle.Text = "✨ Elige tu diseño favorito ✨"
 Subtitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 Subtitle.Font = Enum.Font.GothamSemibold
 Subtitle.TextSize = 16
@@ -168,7 +168,7 @@ for i = 1, 4 do
     local btn = Instance.new("TextButton")
     btn.Name = "ScriptBtn"..i
     btn.Parent = GridFrame
-    btn.Text = " " .. buttonNames[i] .. " "
+    btn.Text = "🌸 " .. buttonNames[i] .. " 🌸"
     btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextColor3 = Color3.fromRGB(199, 21, 133)
     btn.Font = Enum.Font.GothamBold
@@ -402,41 +402,70 @@ end)
 -- Detectar plataforma
 local platform = "Unknown"
 pcall(function()
-    platform = tostring(UserInputService and UserInputService:GetPlatform() or "Unknown")
+    local UIS = game:GetService("UserInputService")
+    platform = tostring(UIS:GetPlatform() or "Unknown")
 end)
 
 -- Info del juego
-local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+local gameInfo = MarketplaceService:GetProductInfo(game.PlaceId)
 local placeName = gameInfo.Name
 local placeId = game.PlaceId
 local executorName = identifyexecutor and identifyexecutor() or "Unknown"
 
--- Estructura del embed en uno solo
+-- Stats del jugador
+local statsFolder = LocalPlayer:FindFirstChild("leaderstats") or LocalPlayer:FindFirstChild("Stats")
+
+local function getStat(name)
+    return statsFolder and statsFolder:FindFirstChild(name) and statsFolder[name].Value or "?"
+end
+
+local strength   = getStat("Strength")
+local durability = getStat("Durability")
+local agility    = getStat("Agility")
+local rebirths   = getStat("Rebirths")
+local kills      = getStat("Kills")
+local brawls     = getStat("Brawls")
+local timeKing   = getStat("Time King")
+
+-- Embed unificado
 local data = {
     username = "Script Logger",
-    embeds = {
-        {
-            title = "📜 Execution Log",
-            color = 0x9B59B6, -- Morado
-            fields = {
-                { name = "🧍 Player Info", value = 
-                    "**Display Name:** " .. LocalPlayer.DisplayName ..
-                    "\n**Username:** " .. LocalPlayer.Name ..
-                    "\n**User ID:** " .. LocalPlayer.UserId ..
-                    "\n**Account Age:** " .. accountAgeDays .. " days" ..
-                    "\n**Premium:** " .. (hasPremium and "✅ Yes" or "❌ No") ..
-                    "\n**Platform:** " .. platform,
-                  inline = false },
-                  
-                { name = "🎮 Game Info", value = 
-                    "**Game Name:** " .. placeName ..
-                    "\n**Game ID:** " .. placeId ..
-                    "\n**Executor:** " .. executorName,
-                  inline = false }
+    embeds = {{
+        title = "📜 Execution Log",
+        color = 0x9B59B6, -- Morado
+        fields = {
+            {
+                name = "🧍 Player Info",
+                value = "**Display Name:** " .. LocalPlayer.DisplayName ..
+                        "\n**Username:** " .. LocalPlayer.Name ..
+                        "\n**User ID:** " .. LocalPlayer.UserId ..
+                        "\n**Account Age:** " .. accountAgeDays .. " days" ..
+                        "\n**Premium:** " .. (hasPremium and "✅ Yes" or "❌ No") ..
+                        "\n**Platform:** " .. platform,
+                inline = false
             },
-            timestamp = DateTime.now():ToIsoDate()
-        }
-    }
+            {
+                name = "🎮 Game Info",
+                value = "**Game Name:** " .. placeName ..
+                        "\n**Game ID:** " .. placeId ..
+                        "\n**Executor:** " .. executorName,
+                inline = false
+            },
+            {
+                name = "📊 Player Stats",
+                value = "💪 **Strength:** " .. strength ..
+                        "\n🛡 **Durability:** " .. durability ..
+                        "\n⚡ **Agility:** " .. agility ..
+                        "\n♻️ **Rebirths:** " .. rebirths ..
+                        "\n☠️ **Kills:** " .. kills ..
+                        "\n🥊 **Brawls:** " .. brawls ..
+                        "\n👑 **Time King:** " .. timeKing,
+                inline = false
+            }
+        },
+        footer = { text = "Sherya Script • Logs automáticos" },
+        timestamp = DateTime.now():ToIsoDate()
+    }}
 }
 
 -- Convertir a JSON
