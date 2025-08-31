@@ -3,8 +3,11 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PlaceId = game.PlaceId
 
 -- ================================
 -- GUI principal
@@ -15,7 +18,7 @@ screenGui.Parent = PlayerGui
 screenGui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 150)
+mainFrame.Size = UDim2.new(0, 220, 0, 100)
 mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 80)
 mainFrame.BorderSizePixel = 2
@@ -23,7 +26,7 @@ mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
--- Drag manual (backup)
+-- Drag manual
 do
     local dragging, dragInput, dragStart, startPos
     local function update(input)
@@ -64,7 +67,7 @@ end
 
 -- Título
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0.2, 0)
+title.Size = UDim2.new(1, 0, 0.4, 0)
 title.BackgroundTransparency = 1
 title.Text = "Galaxy Hub"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -74,8 +77,8 @@ title.Parent = mainFrame
 
 -- Contador de kills
 local killCounter = Instance.new("TextLabel")
-killCounter.Size = UDim2.new(1, 0, 0.2, 0)
-killCounter.Position = UDim2.new(0, 0, 0.2, 0)
+killCounter.Size = UDim2.new(1, 0, 0.6, 0)
+killCounter.Position = UDim2.new(0, 0, 0.4, 0)
 killCounter.BackgroundTransparency = 1
 killCounter.Text = "Kills: 0"
 killCounter.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -83,7 +86,7 @@ killCounter.Font = Enum.Font.Gotham
 killCounter.TextScaled = true
 killCounter.Parent = mainFrame
 
--- Función para animación del borde
+-- Animación del borde
 task.spawn(function()
     while task.wait(1) do
         TweenService:Create(mainFrame, TweenInfo.new(1), {BorderColor3 = Color3.fromRGB(128, 0, 255)}):Play()
@@ -93,47 +96,13 @@ task.spawn(function()
 end)
 
 -- ================================
--- Funciones de kills y whitelist
+-- Variables automáticas
 -- ================================
 _G.whitelistedPlayers = _G.whitelistedPlayers or {}
-_G.killAll = false
-_G.whitelistFriends = false
+_G.killAll = true
+_G.whitelistFriends = true
 
--- Crear switches
-local function createSwitch(name, positionY, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -10, 0, 25)
-    frame.Position = UDim2.new(0, 5, 0, positionY)
-    frame.BackgroundTransparency = 0.3
-    frame.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
-    frame.Parent = mainFrame
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.Position = UDim2.new(0, 5, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.Gotham
-    label.TextScaled = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.25, 0, 0.7, 0)
-    button.Position = UDim2.new(0.7, 0, 0.15, 0)
-    button.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-    button.Text = ""
-    button.Parent = frame
-
-    button.MouseButton1Click:Connect(function()
-        default = not default
-        button.BackgroundColor3 = default and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-        callback(default)
-    end)
-end
-
--- Función para actualizar whitelist con amigos
+-- Función para auto-whitelist amigos
 local function updateWhitelist()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player:IsFriendsWith(LocalPlayer.UserId) then
@@ -144,7 +113,23 @@ local function updateWhitelist()
     end
 end
 
--- Auto kill functions
+-- Ejecutar al iniciar
+if _G.whitelistFriends then
+    updateWhitelist()
+end
+
+-- Escuchar nuevos jugadores para whitelist
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer and player:IsFriendsWith(LocalPlayer.UserId) then
+        if not table.find(_G.whitelistedPlayers, player.Name) then
+            table.insert(_G.whitelistedPlayers, player.Name)
+        end
+    end
+end)
+
+-- ================================
+-- Funciones de Auto Kill
+-- ================================
 local function isPlayerAlive(player)
     return player and player.Character and 
            player.Character:FindFirstChild("HumanoidRootPart") and
@@ -183,30 +168,7 @@ local function isWhitelisted(player)
     return false
 end
 
--- ================================
--- Crear switches en GUI
--- ================================
-createSwitch("Auto Kill Everyone", 60, true, function(value)
-    _G.killAll = value
-end)
-
-createSwitch("Auto Whitelist Friends", 95, true, function(value)
-    _G.whitelistFriends = value
-    if value then
-        updateWhitelist()
-    end
-end)
-
--- Escuchar nuevos jugadores para auto-whitelist
-Players.PlayerAdded:Connect(function(player)
-    if _G.whitelistFriends and player:IsFriendsWith(LocalPlayer.UserId) then
-        if not table.find(_G.whitelistedPlayers, player.Name) then
-            table.insert(_G.whitelistedPlayers, player.Name)
-        end
-    end
-end)
-
--- Auto kill loop
+-- Loop automático de kills
 RunService.Heartbeat:Connect(function()
     if _G.killAll then
         for _, player in pairs(Players:GetPlayers()) do
@@ -244,3 +206,38 @@ else
         end
     end)
 end
+
+-- ================================
+-- Auto Server Hop cada 120 segundos
+-- ================================
+spawn(function()
+    while true do
+        task.wait(120)
+        pcall(function()
+            local servers = {}
+            local req = syn and syn.request or http_request or request
+            if not req then
+                warn("Tu ejecutor no soporta http requests.")
+                return
+            end
+            local response = req({
+                Url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Desc&limit=100"
+            })
+            if response and response.Body then
+                local data = HttpService:JSONDecode(response.Body)
+                for _, server in ipairs(data.data) do
+                    local occupancy = server.playing / server.maxPlayers
+                    if occupancy >= 0.65 and server.id ~= game.JobId then
+                        table.insert(servers, server.id)
+                    end
+                end
+            end
+            if #servers > 0 then
+                local targetServer = servers[math.random(1, #servers)]
+                TeleportService:TeleportToPlaceInstance(PlaceId, targetServer)
+            else
+                warn("No se encontraron servidores con 65% de ocupación o más.")
+            end
+        end)
+    end
+end)
