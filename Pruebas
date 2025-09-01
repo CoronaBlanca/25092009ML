@@ -178,5 +178,24 @@ extraTab:AddSwitch("Auto Ground Slam", function(Value)
     end
 end, "Usa Ground Slam automáticamente")
 
+extraTab:AddLabel("Quitar Good Mode")
+extraTab:AddLabel("Si alguien tiene God Mode, se lo quitas")
+extraTab:AddLabel("Preciona el boton y al jugador no podra usar Auto Kill V2")
+
+extraTab:AddButton("Lugar Secreto", function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoidRootPart.CFrame = CFrame.new(-241.12, -369.25, -396.96)
+    
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Teletransporte",
+        Text = "Teleported to Coordenadas (-241, -369, -396)",
+        Duration = 3
+    })
+end)
+
+extraTab:AddLabel("------------------------------------")
 extraTab:AddLabel("More ideas to fill this table, on my discord server, it's in credits")
 extraTab:AddLabel("Más ideas para llenar esta tabla, en mi servidor de discord, está en créditos")
+extraTab:AddLabel("------------------------------------")
