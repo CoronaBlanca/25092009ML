@@ -38,6 +38,9 @@ local window = library:AddWindow("Sherya Script | Galaxy Hub", {
 
 local extraTab = window:AddTab("Extra")
 
+extraTab:AddLabel("Buen juego!!! Auto Kill V2 Activado...")
+extraTab:AddLabel("Good game!!! Auto Kill V2 Activated...")
+
 extraTab:AddSwitch("God Mode Brawl", function(State)
     godModeToggle = State
 
@@ -51,15 +54,15 @@ extraTab:AddSwitch("God Mode Brawl", function(State)
     end
 end)
 
--- 📌 Dropdown para seguir jugadores en vez de escribirlos
+-- 📌 Dropdown + Switch para seguir jugadores
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Variable para guardar a quién estamos siguiendo
+-- Variables
 local targetPlayer = nil
 local following = false
 
--- Dropdown
+-- Dropdown para elegir al jugador
 local followDropdown =
     extraTab:AddDropdown(
     "Selecciona jugador para seguir",
@@ -70,44 +73,58 @@ local followDropdown =
             local plr = Players:FindFirstChild(playerName)
             if plr then
                 targetPlayer = plr
-                following = true
-
-                -- Notificación
                 game.StarterGui:SetCore("SendNotification", {
-                    Title = "✅ Teleport Activado",
-                    Text = "Siguiendo a: " .. plr.Name,
+                    Title = "🎯 Objetivo fijado",
+                    Text = "Jugador seleccionado: " .. plr.Name,
                     Duration = 3
                 })
-
-                -- Bucle de seguimiento
-                spawn(function()
-                    while following and targetPlayer do
-                        local myChar = LocalPlayer.Character
-                        local targetChar = targetPlayer.Character
-                        if myChar and targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
-                            myChar:SetPrimaryPartCFrame(targetChar.HumanoidRootPart.CFrame * CFrame.new(0,0,-2))
-                        end
-                        wait(0.2)
-                    end
-                end)
             end
         end
     end
 )
 
--- Función para obtener texto bonito con Username | DisplayName
+-- Switch para activar/desactivar el seguimiento
+extraTab:AddSwitch("Activar seguimiento", function(Value)
+    following = Value
+    if following and targetPlayer then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "✅ Teleport Activado",
+            Text = "Siguiendo a: " .. targetPlayer.Name,
+            Duration = 3
+        })
+
+        spawn(function()
+            while following and targetPlayer do
+                local myChar = LocalPlayer.Character
+                local targetChar = targetPlayer.Character
+                if myChar and targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+                    myChar:SetPrimaryPartCFrame(targetChar.HumanoidRootPart.CFrame * CFrame.new(0,0,-2))
+                end
+                wait(0.2)
+            end
+        end)
+    else
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "❌ Teleport Desactivado",
+            Text = "Ya no estás siguiendo a nadie",
+            Duration = 3
+        })
+    end
+end)
+
+-- Función para mostrar username | displayname
 local function getPlayerDisplayText(player)
     return player.DisplayName .. " | " .. player.Name
 end
 
--- Añadir jugadores ya presentes
+-- Añadir jugadores presentes
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
         followDropdown:Add(getPlayerDisplayText(player))
     end
 end
 
--- Añadir jugadores nuevos cuando entren
+-- Añadir jugadores nuevos
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         followDropdown:Add(getPlayerDisplayText(player))
@@ -127,25 +144,39 @@ end)
 
 extraTab:AddSwitch("Auto Ground Slam", function(Value)
     _G.AutoGroundSlam = Value
-    
-    if Value then
-        local slamTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Ground Slam")
-        if slamTool then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(slamTool)
-        end
-    else
-        local character = game.Players.LocalPlayer.Character
-        local equipped = character:FindFirstChild("Ground Slam")
-        if equipped then
-            equipped.Parent = game.Players.LocalPlayer.Backpack
-        end
-    end
-    
+
     task.spawn(function()
         while _G.AutoGroundSlam do
-            if not _G.AutoGroundSlam then break end
-            game:GetService("Players").LocalPlayer.muscleEvent:FireServer("slam")
-            task.wait(0.2) -- puedes ajustar la velocidad del spam
+            local player = game.Players.LocalPlayer
+            local char = player.Character
+            local backpack = player.Backpack
+
+            -- Buscar la herramienta
+            local slamTool = char and char:FindFirstChild("Ground Slam") or backpack:FindFirstChild("Ground Slam")
+            if slamTool then
+                -- Equipar si está en la mochila
+                if slamTool.Parent == backpack and char and char:FindFirstChild("Humanoid") then
+                    char.Humanoid:EquipTool(slamTool)
+                end
+                -- Usar la herramienta como si dieras clic
+                slamTool:Activate()
+            end
+
+            task.wait(0.3) -- Velocidad de uso (puedes ajustar)
         end
     end)
+
+    if not Value then
+        -- Cuando lo apagas, guardar la herramienta en la backpack
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            local equipped = character:FindFirstChild("Ground Slam")
+            if equipped then
+                equipped.Parent = game.Players.LocalPlayer.Backpack
+            end
+        end
+    end
 end, "Usa Ground Slam automáticamente")
+
+extraTab:AddLabel("More ideas to fill this table, on my discord server, it's in credits")
+extraTab:AddLabel("Más ideas para llenar esta tabla, en mi servidor de discord, está en créditos")
