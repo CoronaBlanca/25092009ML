@@ -1,218 +1,151 @@
-local buttonNames = {"Elerium", "Fluent", "Dr-ray", "Pack Farm"}
-local scripts = {
-    [1] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Elerium-V5"))()("Sherya Scripts: Script 1 ejecutado")
-    ]],
-    [2] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/FLUENT"))()("Sherya Scripts: Script 2 ejecutado")
-    ]],
-    [3] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Dr-Ray"))()("Sherya Scripts: Script 3 ejecutado")
-    ]],
-    [4] = [[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009ML/refs/heads/main/Farm-Packs"))()("Sherya Scripts: Script 4 ejecutado")
-    ]],
-}
-
-local TweenService = game:GetService("TweenService")
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Sherya-Script-Private/Elerium-V5/refs/heads/main/Library", true))()
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local startTime = os.time()
+local startRebirths = player.leaderstats.Rebirths.Value
+local displayName = player.DisplayName
 
--- 🎨 Paleta de colores
-local mainPurple = Color3.fromRGB(138, 43, 226)   -- morado base
-local neonPurple = Color3.fromRGB(186, 85, 211)   -- morado neón
-local darkPurple = Color3.fromRGB(75, 0, 130)     -- morado oscuro
+-- Anti-AFK System
+local VirtualUser = game:GetService("VirtualUser")
+local antiAFKConnection
 
--- 📌 GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SheryaScriptsUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game:GetService("CoreGui")
-
-local BlurFrame = Instance.new("Frame")
-BlurFrame.Parent = ScreenGui
-BlurFrame.Size = UDim2.new(1, 0, 1, 0)
-BlurFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-BlurFrame.BackgroundTransparency = 0.3
-BlurFrame.BorderSizePixel = 0
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Parent = ScreenGui
-MainFrame.Name = "MainFrame"
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, 400, 0, 320)
-MainFrame.BackgroundColor3 = mainPurple
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.Parent = MainFrame
-MainCorner.CornerRadius = UDim.new(0, 25)
-
-local Gradient = Instance.new("UIGradient")
-Gradient.Parent = MainFrame
-Gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, darkPurple),
-    ColorSequenceKeypoint.new(0.5, mainPurple),
-    ColorSequenceKeypoint.new(1, neonPurple)
-}
-Gradient.Rotation = 135
-
-local GlowStroke = Instance.new("UIStroke")
-GlowStroke.Parent = MainFrame
-GlowStroke.Color = neonPurple
-GlowStroke.Thickness = 4
-GlowStroke.Transparency = 0.2
-TweenService:Create(GlowStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-    Thickness = 6,
-    Transparency = 0.6,
-    Color = darkPurple
-}):Play()
-
--- ✨ Partículas mágicas cayendo
-local function createFallingSparkle(parent)
-    local sparkle = Instance.new("TextLabel")
-    sparkle.Parent = parent
-    sparkle.Size = UDim2.new(0, 20, 0, 20)
-    sparkle.Position = UDim2.new(math.random(), 0, -0.1, 0)
-    sparkle.BackgroundTransparency = 1
-    sparkle.Text = "✨"
-    sparkle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    sparkle.TextSize = 16
-    sparkle.Font = Enum.Font.Gotham
-
-    local fallTween = TweenService:Create(sparkle, TweenInfo.new(3, Enum.EasingStyle.Linear), {
-        Position = UDim2.new(sparkle.Position.X.Scale, 0, 1.1, 0),
-        Rotation = math.random(-180, 180),
-        TextTransparency = 1,
-        Size = UDim2.new(0, math.random(10,25), 0, math.random(10,25))
-    })
-    fallTween:Play()
-
-    fallTween.Completed:Connect(function()
-        sparkle:Destroy()
+local function setupAntiAFK()
+    -- Disconnect previous connection if it exists
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+    end
+    
+    -- Connect to PlayerIdleEvent to prevent AFK kicks
+    antiAFKConnection = player.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+        print("Anti-AFK: Prevented idle kick")
     end)
+    
+    print("Anti-AFK system enabled")
 end
 
-task.spawn(function()
-    while task.wait(0.4) do
-        if MainFrame.Parent then
-            createFallingSparkle(MainFrame)
-        else
-            break
+-- Initialize Anti-AFK system
+setupAntiAFK()
+
+-- Create Main Window
+local window = library:AddWindow("Sherya Script | Galaxy Hub", {
+    main_color = Color3.fromRGB(75, 0, 130),
+    min_size = Vector2.new(500, 800),
+    can_resize = true,
+})
+
+local extraTab = window:AddTab("Extra")
+
+extraTab:AddSwitch("God Mode Brawl", function(State)
+    godModeToggle = State
+
+    if State then
+        task.spawn(function()
+            while godModeToggle do
+                game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
+                task.wait(0)
+            end
+        end)
+    end
+end)
+
+-- 📌 Dropdown para seguir jugadores en vez de escribirlos
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Variable para guardar a quién estamos siguiendo
+local targetPlayer = nil
+local following = false
+
+-- Dropdown
+local followDropdown =
+    extraTab:AddDropdown(
+    "Selecciona jugador para seguir",
+    function(selectedText)
+        -- Extraer nombre
+        local playerName = selectedText:match("| (.+)$")
+        if playerName then
+            local plr = Players:FindFirstChild(playerName)
+            if plr then
+                targetPlayer = plr
+                following = true
+
+                -- Notificación
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "✅ Teleport Activado",
+                    Text = "Siguiendo a: " .. plr.Name,
+                    Duration = 3
+                })
+
+                -- Bucle de seguimiento
+                spawn(function()
+                    while following and targetPlayer do
+                        local myChar = LocalPlayer.Character
+                        local targetChar = targetPlayer.Character
+                        if myChar and targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+                            myChar:SetPrimaryPartCFrame(targetChar.HumanoidRootPart.CFrame * CFrame.new(0,0,-2))
+                        end
+                        wait(0.2)
+                    end
+                end)
+            end
+        end
+    end
+)
+
+-- Función para obtener texto bonito con Username | DisplayName
+local function getPlayerDisplayText(player)
+    return player.DisplayName .. " | " .. player.Name
+end
+
+-- Añadir jugadores ya presentes
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        followDropdown:Add(getPlayerDisplayText(player))
+    end
+end
+
+-- Añadir jugadores nuevos cuando entren
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer then
+        followDropdown:Add(getPlayerDisplayText(player))
+    end
+end)
+
+-- Remover jugadores que se vayan
+Players.PlayerRemoving:Connect(function(player)
+    if player ~= LocalPlayer then
+        followDropdown:Remove(getPlayerDisplayText(player))
+        if targetPlayer == player then
+            following = false
+            targetPlayer = nil
         end
     end
 end)
 
--- ❌ Botón de cerrar
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = MainFrame
-CloseBtn.Size = UDim2.new(0, 35, 0, 35)
-CloseBtn.Position = UDim2.new(1, -45, 0, 10)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 60)
-CloseBtn.Text = "×"
-CloseBtn.TextColor3 = neonPurple
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 20
-CloseBtn.BorderSizePixel = 0
-CloseBtn.BackgroundTransparency = 0.1
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.Parent = CloseBtn
-CloseCorner.CornerRadius = UDim.new(0, 17)
-
-local CloseStroke = Instance.new("UIStroke")
-CloseStroke.Parent = CloseBtn
-CloseStroke.Color = neonPurple
-CloseStroke.Thickness = 2
-CloseStroke.Transparency = 0.4
-
--- 📝 Título y subtítulo
-local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 70)
-Title.Position = UDim2.new(0, 0, 0, 10)
-Title.BackgroundTransparency = 1
-Title.Text = " Sherya Script "
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 28
-Title.TextStrokeTransparency = 0.4
-Title.TextStrokeColor3 = darkPurple
-
-local Subtitle = Instance.new("TextLabel")
-Subtitle.Parent = MainFrame
-Subtitle.Size = UDim2.new(1, 0, 0, 25)
-Subtitle.Position = UDim2.new(0, 0, 0, 65)
-Subtitle.BackgroundTransparency = 1
-Subtitle.Text = "✨ Elige tu script favorito ✨"
-Subtitle.TextColor3 = Color3.fromRGB(230, 230, 255)
-Subtitle.Font = Enum.Font.GothamSemibold
-Subtitle.TextSize = 16
-
--- 📌 Botones
-local GridFrame = Instance.new("Frame")
-GridFrame.Parent = MainFrame
-GridFrame.Position = UDim2.new(0, 30, 0, 110)
-GridFrame.Size = UDim2.new(1, -60, 1, -130)
-GridFrame.BackgroundTransparency = 1
-
-local UIGridLayout = Instance.new("UIGridLayout")
-UIGridLayout.Parent = GridFrame
-UIGridLayout.CellSize = UDim2.new(0, 160, 0, 55)
-UIGridLayout.CellPadding = UDim2.new(0, 20, 0, 20)
-UIGridLayout.FillDirectionMaxCells = 2
-UIGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIGridLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
-for i = 1, 4 do
-    local btn = Instance.new("TextButton")
-    btn.Name = "ScriptBtn"..i
-    btn.Parent = GridFrame
-    btn.Text = " " .. buttonNames[i] .. " "
-    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    btn.TextColor3 = neonPurple
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 18
-    btn.BorderSizePixel = 0
-    btn.AutoButtonColor = false
-    btn.LayoutOrder = i
-    btn.BackgroundTransparency = 0.1
-
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.Parent = btn
-    btnCorner.CornerRadius = UDim.new(0, 15)
-
-    -- Contorno fosforescente morado/negro
-    local btnStroke = Instance.new("UIStroke")
-    btnStroke.Parent = btn
-    btnStroke.Thickness = 3
-    btnStroke.Color = neonPurple
-    btnStroke.Transparency = 0.2
-
-    TweenService:Create(btnStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-        Transparency = 0.6,
-        Thickness = 6,
-        Color = darkPurple
-    }):Play()
-
-    -- Acción click
-    btn.MouseButton1Click:Connect(function()
-        local scriptToRun = scripts[i]
-        if scriptToRun then
-            ScreenGui:Destroy()
-            loadstring(scriptToRun)()
+extraTab:AddSwitch("Auto Ground Slam", function(Value)
+    _G.AutoGroundSlam = Value
+    
+    if Value then
+        local slamTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Ground Slam")
+        if slamTool then
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(slamTool)
+        end
+    else
+        local character = game.Players.LocalPlayer.Character
+        local equipped = character:FindFirstChild("Ground Slam")
+        if equipped then
+            equipped.Parent = game.Players.LocalPlayer.Backpack
+        end
+    end
+    
+    task.spawn(function()
+        while _G.AutoGroundSlam do
+            if not _G.AutoGroundSlam then break end
+            game:GetService("Players").LocalPlayer.muscleEvent:FireServer("slam")
+            task.wait(0.2) -- puedes ajustar la velocidad del spam
         end
     end)
-end
-
--- Animación de entrada
-MainFrame.Size = UDim2.new(0, 0, 0, 0)
-MainFrame.Rotation = -45
-BlurFrame.BackgroundTransparency = 1
-TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 400, 0, 320),
-    Rotation = 0
-}):Play()
-TweenService:Create(BlurFrame, TweenInfo.new(0.6), {BackgroundTransparency = 0.3}):Play()
-ScreenGui.IgnoreGuiInset = true
+end, "Usa Ground Slam automáticamente")
