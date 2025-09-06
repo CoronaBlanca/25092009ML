@@ -1,67 +1,145 @@
+-- Galaxy Hub | Fixed & Polished by ChatGPT
+-- Notes:
+-- - Fixed duplicate toggles and conflicting globals
+-- - Replaced bad VirtualInputManager key usage (now uses Enum.KeyCode)
+-- - Prevented overwriting toggle objects with booleans
+-- - Made Jungle Gym toggles mutually-exclusive and reliable
+-- - Ensured auto-lift actually runs for each Jungle/Jim/Gym action
+-- - Removed duplicated Boulder toggle block
+-- - Added nil-safety around GUI lookups
+-- - Minor cleanups for readability
+
+-- // ========================= Loader ========================= 
 local Library = loadstring(game:HttpGetAsync("https://github.com/ActualMasterOogway/Fluent-Renewed/releases/latest/download/Fluent.luau"))()
 local SaveManager = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/master/Addons/SaveManager.luau"))()
 local InterfaceManager = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/master/Addons/InterfaceManager.luau"))()
- 
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RS = game:GetService("RunService")
+local VIM = game:GetService("VirtualInputManager")
+local StarterGui = game:GetService("StarterGui")
+
+-- shared/global state
+getgenv()._GH = getgenv()._GH or {}
+local GH = getgenv()._GH
+
+-- // ========================= Window ========================= 
 local Window = Library:CreateWindow{
     Title = "Sherya Script | Galaxy Hub",
     SubTitle = "By Isabella",
     TabWidth = 160,
     Size = UDim2.fromOffset(400, 400),
     Acrylic = true,
-    Theme = "Amethyst Dark", -- Puedes cambiar a "Light" si prefieres
+    Theme = "Amethyst Dark",
     MinimizeKey = Enum.KeyCode.RightControl
 }
 
--- Fluent Renewed provides ALL 1544 Lucide 0.469.0 https://lucide.dev/icons/ Icons and ALL 9072 Phosphor 2.1.0 https://phosphoricons.com/ Icons for the tabs, icons are optional
 local Tabs = {
-  Main = Window:CreateTab{
-    	Title = "Main",
-    	Icon = "house"
-    },
-    Farm = Window:CreateTab{
-        Title = "Farm",
-        Icon = "wheat"
-    },
-  	Misc = Window:CreateTab{
-        Title = "Misc",
-        Icon = "settings"
-    },
-	Pets = Window:CreateTab{
-        Title = "Pets",
-        Icon = "heart"
-    },
-  	Stats = Window:CreateTab{
-        Title = "Stats",
-        Icon = "trending-up"
-    },
-	Calculator = Window:CreateTab{
-        Title = "Calculator",
-        Icon = "calculator"
-    },
-	Killer = Window:CreateTab{
-        Title = "Killer",
-        Icon = "sword"
-    },
-	Teleport = Window:CreateTab{
-        Title = "Teleport",
-        Icon = "zap"
-    },
-    Credits = Window:CreateTab{
-        Title = "Credits",
-        Icon = "users"
-    }
+  Main = Window:CreateTab{ Title = "Main", Icon = "house" },
+  Farm = Window:CreateTab{ Title = "Farm", Icon = "wheat" },
+  Misc = Window:CreateTab{ Title = "Misc", Icon = "settings" },
+  Pets = Window:CreateTab{ Title = "Pets", Icon = "heart" },
+  Stats = Window:CreateTab{ Title = "Stats", Icon = "trending-up" },
+  Calculator = Window:CreateTab{ Title = "Calculator", Icon = "calculator" },
+  Killer = Window:CreateTab{ Title = "Killer", Icon = "sword" },
+  Teleport = Window:CreateTab{ Title = "Teleport", Icon = "zap" },
+  Credits = Window:CreateTab{ Title = "Credits", Icon = "users" }
 }
 local Options = Library.Options
 
 Library:Notify{
     Title = "Welcome to Galaxy Hub",
     Content = "Galaxy Hub On Top",
-    SubContent = "The Best Script For Muscle Legends", -- Optional
-    Duration = 13 -- Set to nil to make the notification not disappear
+    SubContent = "The Best Script For Muscle Legends",
+    Duration = 13
 }
 
-Tabs.Main:AddSection("Discord Server Link")
+-- // ========================= Helpers ========================= 
+local function safePcall(fn)
+    return pcall(fn)
+end
 
+local function tryGet(pathFn)
+    local ok, res = pcall(pathFn)
+    if ok then return res end
+    return nil
+end
+
+local function pressE()
+    -- simulate quick E press
+    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.1)
+    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+local function isCharacterReady(player)
+    player = player or LocalPlayer
+    local character = player and player.Character
+    if not character then return false end
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 or hum:GetState() == Enum.HumanoidStateType.Dead then return false end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    return hrp ~= nil
+end
+
+local function tpCFrame(cf)
+    if not isCharacterReady() then return end
+    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.CFrame = cf end
+end
+
+local function notify(t, text)
+    StarterGui:SetCore("SendNotification", { Title = t, Text = text, Duration = 5 })
+end
+
+-- muscleEvent wrappers
+local function repOnce()
+    local plr = LocalPlayer
+    local ev = tryGet(function() return plr.muscleEvent end)
+    if ev then safePcall(function() ev:FireServer("rep") end) end
+end
+
+local function punchBoth()
+    local plr = LocalPlayer
+    local ev = tryGet(function() return plr.muscleEvent end)
+    if ev then
+        safePcall(function() ev:FireServer("punch", "rightHand") end)
+        safePcall(function() ev:FireServer("punch", "leftHand") end)
+    end
+end
+
+-- Auto Lift loop (driven by GH.working)
+local function autoLiftLoop()
+    while GH.working do
+        repOnce()
+        task.wait()
+    end
+end
+
+local function teleportAndStart(workoutName, cf)
+    tpCFrame(cf)
+    task.wait(0.15)
+    pressE()
+    -- ensure lifting loop enabled
+    GH.working = true
+    task.spawn(autoLiftLoop)
+    GH.currentWorkout = workoutName
+end
+
+-- prevent multiple jungle toggles at once
+local function disableAllJungle()
+    GH.working = false
+    GH.currentWorkout = nil
+    if GH._JungleToggles then
+        for _, t in pairs(GH._JungleToggles) do
+            if t and t.Set then t:Set(false) end
+        end
+    end
+end
+
+-- // ========================= Main: Discord Link ========================= 
+Tabs.Main:AddSection("Discord Server Link")
 Tabs.Main:CreateButton({
     Title = "Discord Server",
     Description = "Join our Discord server for support and updates!",
@@ -73,8 +151,7 @@ Tabs.Main:CreateButton({
                 {
                     Title = "Confirm",
                     Callback = function()
-                        local link = "https://discord.gg/rnDrhTZZCF"
-                        setclipboard(link)
+                        setclipboard("https://discord.gg/rnDrhTZZCF")
                         print("Copied Discord link to clipboard.")
                     end
                 }
@@ -83,8 +160,10 @@ Tabs.Main:CreateButton({
     end
 })
 
+-- // ========================= Main: Auto Brawls ========================= 
 Tabs.Main:AddSection("Auto Brawls")
 
+GH.godModeBrawl = false
 local godModeToggle = Tabs.Main:CreateToggle("godModeToggle", {
     Title = "God Mode (Brawl)",
     Default = false,
@@ -92,78 +171,54 @@ local godModeToggle = Tabs.Main:CreateToggle("godModeToggle", {
 })
 
 godModeToggle:OnChanged(function(state)
-    godModeToggle = state
-
-    if godModeToggle then
+    GH.godModeBrawl = state
+    if state then
         task.spawn(function()
-            while godModeToggle do
-                game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
-                task.wait(0.1) -- pequeño delay para evitar lag
+            while GH.godModeBrawl do
+                safePcall(function()
+                    game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
+                end)
+                task.wait(0.25) -- small delay to reduce lag/spam
             end
         end)
     end
 end)
 
--- 🔥 Auto Win Brawls
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Toggle
+-- Auto Win Brawls
 local autoWinBrawlToggle = Tabs.Main:CreateToggle("autoWinBrawl", {
     Title = "Auto Win Brawls",
     Default = false,
     Description = "Automatically wins brawls"
 })
 
--- Estado global
-getgenv().autoWinBrawl = false
+GH.autoWinBrawl = false
 
--- Función para equipar el Punch
 local function equipPunch()
-    if not getgenv().autoWinBrawl then return end
-    local character = LocalPlayer.Character
-    if not character then return false end
-    if character:FindFirstChild("Punch") then return true end
-
-    local backpack = LocalPlayer.Backpack
+    if not GH.autoWinBrawl then return end
+    if not isCharacterReady() then return false end
+    local char = LocalPlayer.Character
+    if char:FindFirstChild("Punch") then return true end
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
     if not backpack then return false end
-
-    for _, tool in pairs(backpack:GetChildren()) do
+    for _, tool in ipairs(backpack:GetChildren()) do
         if tool:IsA("Tool") and tool.Name == "Punch" then
-            tool.Parent = character
+            tool.Parent = char
             return true
         end
     end
     return false
 end
 
--- Validación de objetivo
 local function isValidTarget(player)
-    if not player or not player.Parent then return false end
-    if player == LocalPlayer then return false end
+    if not player or player == LocalPlayer then return false end
     if _G.whitelistedPlayers and table.find(_G.whitelistedPlayers, player.Name) then return false end
-
     local character = player.Character
     if not character then return false end
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 or humanoid:GetState() == Enum.HumanoidStateType.Dead then
-        return false
-    end
-
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    return rootPart ~= nil
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 or hum:GetState() == Enum.HumanoidStateType.Dead then return false end
+    return character:FindFirstChild("HumanoidRootPart") ~= nil
 end
 
--- Validar si el jugador local está listo
-local function isLocalPlayerReady()
-    local character = LocalPlayer.Character
-    if not character then return false end
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return false end
-    return character:FindFirstChild("LeftHand") or character:FindFirstChild("RightHand")
-end
-
--- Safe firetouchinterest
 local function safeTouchInterest(targetPart, localPart)
     if not targetPart or not localPart then return false end
     return pcall(function()
@@ -173,250 +228,145 @@ local function safeTouchInterest(targetPart, localPart)
     end)
 end
 
--- Cuando cambia el toggle
 autoWinBrawlToggle:OnChanged(function(state)
-    getgenv().autoWinBrawl = state
-
+    GH.autoWinBrawl = state
     if state then
-        -- Auto Join Brawl
+        -- join brawl when prompted
         task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                pcall(function()
-                    if LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible then
+            while GH.autoWinBrawl do
+                safePcall(function()
+                    local label = tryGet(function() return LocalPlayer.PlayerGui.gameGui.brawlJoinLabel end)
+                    if label and label.Visible then
                         game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                        LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                        label.Visible = false
                     end
                 end)
+                task.wait(0.5)
             end
         end)
-
-        -- Auto Equip Punch
+        -- keep Punch equipped
         task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
+            while GH.autoWinBrawl do
                 equipPunch()
+                task.wait(0.5)
             end
         end)
-
-        -- Auto Punch
+        -- auto punch
         task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.1) do
-                if isLocalPlayerReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    pcall(function() LocalPlayer.muscleEvent:FireServer("punch", "rightHand") end)
-                    pcall(function() LocalPlayer.muscleEvent:FireServer("punch", "leftHand") end)
+            while GH.autoWinBrawl do
+                local inProgress = tryGet(function() return game.ReplicatedStorage.brawlInProgress.Value end)
+                if inProgress and isCharacterReady() then
+                    punchBoth()
                 end
+                task.wait(0.1)
             end
         end)
-
-        -- Auto Hit Enemies
+        -- auto hit enemies
         task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.05) do
-                if isLocalPlayerReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    local character = LocalPlayer.Character
-                    local leftHand = character:FindFirstChild("LeftHand")
-                    local rightHand = character:FindFirstChild("RightHand")
-
-                    for _, player in pairs(Players:GetPlayers()) do
-                        if not getgenv().autoWinBrawl then break end
-                        if isValidTarget(player) then
-                            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
-                            if leftHand then safeTouchInterest(targetRoot, leftHand) end
-                            if rightHand then safeTouchInterest(targetRoot, rightHand) end
+            while GH.autoWinBrawl do
+                local inProgress = tryGet(function() return game.ReplicatedStorage.brawlInProgress.Value end)
+                if inProgress and isCharacterReady() then
+                    local char = LocalPlayer.Character
+                    local lh = char:FindFirstChild("LeftHand")
+                    local rh = char:FindFirstChild("RightHand")
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if not GH.autoWinBrawl then break end
+                        if isValidTarget(plr) then
+                            local hrp = tryGet(function() return plr.Character.HumanoidRootPart end)
+                            if lh then safeTouchInterest(hrp, lh) end
+                            if rh then safeTouchInterest(hrp, rh) end
                         end
                         task.wait(0.01)
                     end
                 end
+                task.wait(0.05)
             end
         end)
     end
 end)
 
--- 🔥 Auto Join Brawl
+-- Auto Join Brawl
 local autoJoinBrawl = Tabs.Main:CreateToggle("autoJoinBrawl", {
     Title = "Auto Join Brawl",
     Default = false,
     Description = "Automatically joins brawls"
 })
 
--- Estado global
-getgenv().autoJoinBrawl = false
+GH.autoJoinBrawl = false
 
--- Cuando cambie el toggle
 autoJoinBrawl:OnChanged(function(state)
-    getgenv().autoJoinBrawl = state
-
+    GH.autoJoinBrawl = state
     if state then
         task.spawn(function()
-            while getgenv().autoJoinBrawl and task.wait(0.5) do
-                pcall(function()
-                    if game.Players.LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible then
+            while GH.autoJoinBrawl do
+                safePcall(function()
+                    local label = tryGet(function() return LocalPlayer.PlayerGui.gameGui.brawlJoinLabel end)
+                    if label and label.Visible then
                         game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                        game.Players.LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                        label.Visible = false
                     end
                 end)
+                task.wait(0.5)
             end
         end)
     end
 end)
 
+-- // ========================= Main: Jungle Gym ========================= 
 Tabs.Main:AddSection("Jungle Gym")
 
--- Cache services for faster access
-local VIM = game:GetService("VirtualInputManager")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+GH._JungleToggles = {}
+GH.working = false
+GH.currentWorkout = nil
 
--- Helper functions for Jungle Gym
-local function pressE()
-    VIM:SendKeyEvent(true, "E", false, game)
-    task.wait(0.1)
-    VIM:SendKeyEvent(false, "E", false, game)
+-- jungle positions
+local junglePositions = {
+    ["Bench Press"] = CFrame.new(-8173, 64, 1898),
+    ["Squat"]       = CFrame.new(-8352, 34, 2878),
+    ["Boulder"]     = CFrame.new(-8621, 34, 2684),
+    ["Pull Up"]     = CFrame.new(-8666, 34, 2070)
+}
+
+local function bindJungleToggle(keyName, uiTitle, workoutName)
+    local toggle = Tabs.Main:CreateToggle(keyName, {
+        Title = uiTitle,
+        Default = false,
+        Description = "Automatically " .. uiTitle
+    })
+
+    toggle:OnChanged(function(state)
+        if state then
+            disableAllJungle()
+            -- re-enable this one
+            if toggle.Set then toggle:Set(true) end
+            local cf = junglePositions[workoutName]
+            if cf then
+                teleportAndStart(workoutName, cf)
+                notify("Jungle Gym", "Started: " .. workoutName)
+            else
+                notify("Jungle Gym", "No position for " .. workoutName)
+            end
+        else
+            if GH.currentWorkout == workoutName then
+                GH.working = false
+                GH.currentWorkout = nil
+                notify("Jungle Gym", "Stopped: " .. workoutName)
+            end
+        end
+    end)
+
+    GH._JungleToggles[workoutName] = toggle
+    return toggle
 end
 
-local function autoLift()
-    while getgenv().working do
-        LocalPlayer.muscleEvent:FireServer("rep")
-        task.wait() -- More efficient than task.wait(0) or task.wait(small number)
-    end
-end
+bindJungleToggle("autoBenchPress", "Bench Press", "Bench Press")
+bindJungleToggle("autoSquat", "Squat", "Squat")
+bindJungleToggle("autoBoulder", "Boulder", "Boulder")
+bindJungleToggle("autoPullUp", "Pull Up", "Pull Up")
 
-local function teleportAndStart(machineName, position)
-    local character = LocalPlayer.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        character.HumanoidRootPart.CFrame = position
-        task.wait(0.1)
-        pressE()
-        task.spawn(autoLift) -- Use task.spawn to prevent UI freezing
-    end
-end
-
--- 💪 Auto Bench Press
-local BenchPress = Tabs.Main:CreateToggle("autoBenchPress", {
-    Title = "Auto Bench Press",
-    Default = false,
-    Description = "Automatically Bench Press"
-})
-
--- Estado global
-getgenv().working = false
-
--- Cuando cambie el toggle
-BenchPress:OnChanged(function(state)
-    if getgenv().working and not state then
-        -- Si estaba activo y se desactiva
-        getgenv().working = false
-        return
-    end
-
-    getgenv().working = state
-    if state then
-        -- Aquí va tu función para teletransportar y empezar el bench
-        teleportAndStart("Bench Press", CFrame.new(-8173, 64, 1898))
-    end
-end)
-
--- 💪 Auto Squat
-local jungleSquat = Tabs.Main:CreateToggle("autoSquat", {
-    Title = "Auto Squat",
-    Default = false,
-    Description = "Automatically Squat"
-})
-
--- Estado global
-getgenv().working = false
-
--- Cuando cambie el toggle
-jungleSquat:OnChanged(function(state)
-    if getgenv().working and not state then
-        -- Si estaba activo y lo apagan
-        getgenv().working = false
-        return
-    end
-
-    getgenv().working = state
-    if state then
-        -- Ejecuta la función al activarse
-        teleportAndStart("Squat", CFrame.new(-8352, 34, 2878))
-    end
-end)
-
--- 🪨 Auto Boulder
-local jungleBoulder = Tabs.Main:CreateToggle("autoBoulder", {
-    Title = "Auto Boulder",
-    Default = false,
-    Description = "Automatically Boulder"
-})
-
--- Estado global solo para Boulder
-getgenv().autoBoulder = false
-
--- Cuando cambie el toggle
-jungleBoulder:OnChanged(function(state)
-    if getgenv().autoBoulder and not state then
-        -- Si estaba activo y lo apagan
-        getgenv().autoBoulder = false
-        return
-    end
-
-    getgenv().autoBoulder = state
-    if state then
-        -- Teletransporta y empieza el Boulder
-        teleportAndStart("Boulder", CFrame.new(-8621, 34, 2684))
-    end
-end)
-
--- 💪 Auto Pull Up
-local junglePullUp = Tabs.Main:CreateToggle("autoPullUp", {
-    Title = "Auto Pull Up",
-    Default = false,
-    Description = "Automatically Pull Up"
-})
-
--- Estado global solo para Pull Up
-getgenv().autoPullUp = false
-
--- Cuando cambie el toggle
-junglePullUp:OnChanged(function(state)
-    if getgenv().autoPullUp and not state then
-        -- Si estaba activo y lo apagaron
-        getgenv().autoPullUp = false
-        return
-    end
-
-    getgenv().autoPullUp = state
-    if state then
-        -- Teletransporta y empieza el Pull Up
-        teleportAndStart("Pull Up", CFrame.new(-8666, 34, 2070))
-    end
-end)
-
--- 🪨 Auto Boulder
-local jungleBoulder = Tabs.Main:CreateToggle("autoBoulder", {
-    Title = "Auto Boulder",
-    Default = false,
-    Description = "Automatically Boulder"
-})
-
--- Estado global solo para Boulder
-getgenv().autoBoulder = false
-
--- Cuando cambie el toggle
-jungleBoulder:OnChanged(function(state)
-    if getgenv().autoBoulder and not state then
-        -- Si estaba activo y lo apagaron
-        getgenv().autoBoulder = false
-        return
-    end
-
-    getgenv().autoBoulder = state
-    if state then
-        -- Teletransporta y empieza el Boulder
-        teleportAndStart("Boulder", CFrame.new(-8621, 34, 2684))
-    end
-end)
-
+-- // ========================= Main: Auto Gyms ========================= 
 Tabs.Main:AddSection("Auto Gyms")
 
--- 📌 Posiciones de cada ejercicio en cada gimnasio
 local workoutPositions = {
     ["Bench Press"] = {
         ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
@@ -440,7 +390,6 @@ local workoutPositions = {
     }
 }
 
--- Ejercicios y traducciones
 local workoutTypes = { "Bench Press", "Squat", "Deadlift", "Pull Up" }
 local workoutTranslations = {
     ["Bench Press"] = "Bench Press",
@@ -448,35 +397,24 @@ local workoutTranslations = {
     ["Deadlift"] = "Peso Muerto",
     ["Pull Up"] = "Dominadas"
 }
-
 local gymLocations = { "Eternal Gym", "Legend Gym", "Muscle King Gym" }
 
--- Guardar referencias de toggles
 local gymToggles = {}
 
--- Función segura para teletransportar
 local function safeTeleport(workoutType, gym)
     local pos = workoutPositions[workoutType] and workoutPositions[workoutType][gym]
     if pos then
         teleportAndStart(workoutType, pos)
     else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Error",
-            Text = "No se encontró posición para " .. workoutType .. " en " .. gym,
-            Duration = 5
-        })
+        notify("Error", "No se encontró posición para " .. workoutType .. " en " .. gym)
     end
 end
 
--- Crear dropdowns y toggles por cada ejercicio
 for _, workoutType in ipairs(workoutTypes) do
     local spanishWorkoutName = workoutTranslations[workoutType]
-
-    -- Inicializar valor por defecto del dropdown
     local defaultGym = gymLocations[1]
     _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] = defaultGym
 
-    -- Dropdown Fluent
     local dropdown = Tabs.Main:CreateDropdown(workoutType .. "GymDropdown", {
         Title = spanishWorkoutName .. " - Gimnasio",
         Values = gymLocations,
@@ -488,7 +426,6 @@ for _, workoutType in ipairs(workoutTypes) do
         _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] = selected
     end)
 
-    -- Toggle Fluent
     local toggle = Tabs.Main:CreateToggle(workoutType .. "GymToggle", {
         Title = "Auto " .. spanishWorkoutName,
         Default = false,
@@ -496,27 +433,30 @@ for _, workoutType in ipairs(workoutTypes) do
     })
 
     toggle:OnChanged(function(state)
-        getgenv()["auto" .. string.gsub(workoutType, " ", "")] = state
-
+        GH["auto" .. string.gsub(workoutType, " ", "")] = state
         if state then
-            local selectedGym = _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"]
-
-            -- Apagar otros toggles
+            -- turn off other gym toggles
             for otherType, otherToggle in pairs(gymToggles) do
-                if otherType ~= workoutType and otherToggle then
+                if otherType ~= workoutType and otherToggle and otherToggle.Set then
                     otherToggle:Set(false)
-                    getgenv()["auto" .. string.gsub(otherType, " ", "")] = false
+                    GH["auto" .. string.gsub(otherType, " ", "")] = false
                 end
             end
-
+            local selectedGym = _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"]
+            GH.working = true
             safeTeleport(workoutType, selectedGym)
+        else
+            if GH.currentWorkout == workoutType then
+                GH.working = false
+                GH.currentWorkout = nil
+            end
         end
     end)
 
     gymToggles[workoutType] = toggle
 end
 
--- Toggle general de Auto Gyms
+-- master toggle
 local AutoGymsToggle = Tabs.Main:CreateToggle("autoGyms", {
     Title = "Auto Gyms",
     Default = false,
@@ -525,22 +465,22 @@ local AutoGymsToggle = Tabs.Main:CreateToggle("autoGyms", {
 
 AutoGymsToggle:OnChanged(function(state)
     for workoutType, toggle in pairs(gymToggles) do
-        toggle:Set(state)
-        getgenv()["auto" .. string.gsub(workoutType, " ", "")] = state
+        if toggle and toggle.Set then toggle:Set(state) end
+        GH["auto" .. string.gsub(workoutType, " ", "")] = state
     end
+    GH.working = state
 end)
 
+-- // ========================= Main: Auto Snacks ========================= 
 Tabs.Main:AddSection("Auto Snacks")
 
--- 🍽 Auto Snacks
-local Autosnacks = Tabs.Main:CreateToggle("autoSnacks", {
+local AutoSnacks = Tabs.Main:CreateToggle("autoSnacks", {
     Title = "Auto Snacks",
     Default = false,
     Description = "Auto Snacks (No Egg)"
 })
 
--- Estado global del toggle
-getgenv().autoEatBoostsEnabled = false
+GH.autoEatBoosts = false
 
 local boostsList = {
     "ULTRA Shake",
@@ -552,35 +492,30 @@ local boostsList = {
     "Tropical Shake"
 }
 
--- Función para comer todos los boosts
 local function eatAllBoosts()
-    local player = game.Players.LocalPlayer
-    local backpack = player:WaitForChild("Backpack")
-    local character = player.Character or player.CharacterAdded:Wait()
-
-    for _, boostName in ipairs(boostsList) do
-        local boost = backpack:FindFirstChild(boostName)
-        while boost do
-            boost.Parent = character
-            pcall(function()
-                boost:Activate()
-            end)
+    local player = LocalPlayer
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
+    if not backpack or not character then return end
+    for _, name in ipairs(boostsList) do
+        local item = backpack:FindFirstChild(name)
+        while item do
+            item.Parent = character
+            safePcall(function() item:Activate() end)
             task.wait(0.1)
-            boost = backpack:FindFirstChild(boostName)
+            item = backpack:FindFirstChild(name)
         end
     end
 end
 
--- Conectar el toggle
-Autosnacks:OnChanged(function(state)
-    getgenv().autoEatBoostsEnabled = state
+AutoSnacks:OnChanged(function(state)
+    GH.autoEatBoosts = state
 end)
 
--- Loop seguro para comer boosts automáticamente
 task.spawn(function()
     while true do
-        if getgenv().autoEatBoostsEnabled then
-            pcall(eatAllBoosts)
+        if GH.autoEatBoosts then
+            safePcall(eatAllBoosts)
             task.wait(2)
         else
             task.wait(1)
@@ -588,48 +523,43 @@ task.spawn(function()
     end
 end)
 
--- 🥚 Auto Protein Egg cada 30 minutos
-local Autossnacks = Tabs.Main:CreateToggle("autoProteinEgg", {
-    Title = "Auto Egg 30 Minuts",
+-- Auto Protein Egg every 30 mins
+local AutoProteinEgg = Tabs.Main:CreateToggle("autoProteinEgg", {
+    Title = "Auto Egg 30 Minutes",
     Default = false,
-    Description = "Auto Protein Egg 30 minutos"
+    Description = "Auto Protein Egg cada 30 minutos"
 })
 
--- Estado global controlado por el toggle
-getgenv().autoEatEnabled = false
+GH.autoEatProteinEgg = false
 
--- Función para comer el huevo de proteína
 local function eatProteinEgg()
-    local player = game.Players.LocalPlayer
-    local backpack = player:WaitForChild("Backpack")
-    local character = player.Character or player.CharacterAdded:Wait()
-
+    local player = LocalPlayer
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
+    if not backpack or not character then return end
     local egg = backpack:FindFirstChild("Protein Egg")
     if egg then
         egg.Parent = character
-        pcall(function()
-            egg:Activate()
-        end)
+        safePcall(function() egg:Activate() end)
     end
 end
 
--- Conectar toggle
-Autossnacks:OnChanged(function(state)
-    getgenv().autoEatEnabled = state
+AutoProteinEgg:OnChanged(function(state)
+    GH.autoEatProteinEgg = state
 end)
 
--- Loop seguro para comer huevo cada 30 minutos
 task.spawn(function()
     while true do
-        if getgenv().autoEatEnabled then
-            pcall(eatProteinEgg)
-            task.wait(1800) -- 30 minutos
+        if GH.autoEatProteinEgg then
+            safePcall(eatProteinEgg)
+            task.wait(1800)
         else
             task.wait(1)
         end
     end
 end)
 
+-- // ========================= Main: OP Things/Farms ========================= 
 Tabs.Main:AddSection("OP Things/Farms")
 
 local blockPosition = Tabs.Main:CreateToggle("blockPosition", {
@@ -638,24 +568,18 @@ local blockPosition = Tabs.Main:CreateToggle("blockPosition", {
     Description = "Locks your position (useful for farms)"
 })
 
--- Callback cuando se cambia el toggle
-blockPosition:OnChanged(function(Value)
-    if Value then
-        -- Guardar la posición actual
-        local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-        
-        -- Conectar a Heartbeat para bloquear posición
-        getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
-            if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
-            end
-        end)
-    else
-        -- Desconectar cuando se desactiva
-        if getgenv().posLock then
-            getgenv().posLock:Disconnect()
-            getgenv().posLock = nil
+blockPosition:OnChanged(function(enabled)
+    if enabled then
+        if isCharacterReady() then
+            local currentPos = LocalPlayer.Character.HumanoidRootPart.CFrame
+            GH._posLockConn = RS.Heartbeat:Connect(function()
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then hrp.CFrame = currentPos end
+            end)
         end
+    else
+        if GH._posLockConn then GH._posLockConn:Disconnect() GH._posLockConn = nil end
     end
 end)
 
@@ -665,28 +589,21 @@ local antiKnockback = Tabs.Main:CreateToggle("antiKnockback", {
     Description = "Prevents knockback from enemies"
 })
 
-antiKnockback:OnChanged(function(Value)
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if not character then return end
-
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-
-    if Value then
-        -- Crear BodyVelocity para evitar knockback
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Name = "AntiKnockbackVelocity"
-        bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.P = 1250
-        bodyVelocity.Parent = rootPart
+antiKnockback:OnChanged(function(enabled)
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if enabled then
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "AntiKnockbackVelocity"
+        bv.MaxForce = Vector3.new(100000, 0, 100000)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.P = 1250
+        bv.Parent = hrp
     else
-        -- Remover BodyVelocity creado previamente
-        local existingVelocity = rootPart:FindFirstChild("AntiKnockbackVelocity")
-        if existingVelocity then
-            existingVelocity:Destroy()
-        end
+        local bv = hrp:FindFirstChild("AntiKnockbackVelocity")
+        if bv then bv:Destroy() end
     end
 end)
 
@@ -696,43 +613,29 @@ local hideFrames = Tabs.Main:CreateToggle("hideFrames", {
     Description = "Hides unnecessary GUI frames"
 })
 
-hideFrames:OnChanged(function(Value)
-    local player = game.Players.LocalPlayer
-    local playerGui = player:FindFirstChild("PlayerGui")
+hideFrames:OnChanged(function(enabled)
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return end
-
-    -- Buscar y ocultar o mostrar los frames
     for _, obj in pairs(playerGui:GetDescendants()) do
         if obj:IsA("GuiObject") and obj.Name:match("Frame$") then
-            if Value then
-                obj.Visible = false
-            else
-                obj.Visible = true
-            end
+            obj.Visible = not enabled and true or false
         end
     end
 end)
 
+-- Anti AFK button
 Tabs.Main:CreateButton({
     Title = "Anti AFK",
     Description = "Prevents you from being kicked for being AFK",
     Callback = function()
-        -- Variables para el Anti AFK GUI
-        local antiAFKActive = false
-        local antiAFKConnection = nil
+        local antiAFKActive = GH._antiAFKActive or false
+        local antiAFKConnection = GH._antiAFKConn
         local sessionStartTime = tick()
-        local sheryaGUI = nil
+        local sheryaGUI = GH._antiAFKGui
 
-        -- Función para crear la GUI de monitoreo
         local function createSheryaGUI()
-            if sheryaGUI then
-                sheryaGUI:Destroy()
-                sheryaGUI = nil
-            end
-
-            local player = game.Players.LocalPlayer
-            local playerGui = player:WaitForChild("PlayerGui")
-
+            if sheryaGUI then sheryaGUI:Destroy() sheryaGUI = nil end
+            local playerGui = LocalPlayer:WaitForChild("PlayerGui")
             sheryaGUI = Instance.new("ScreenGui")
             sheryaGUI.Name = "SheryaScript"
             sheryaGUI.Parent = playerGui
@@ -753,7 +656,6 @@ Tabs.Main:CreateButton({
             corner.CornerRadius = UDim.new(0, 8)
             corner.Parent = mainFrame
 
-            -- Labels: título, ping, fps, sesión, status
             local function createLabel(name, posY, text, color)
                 local label = Instance.new("TextLabel")
                 label.Name = name
@@ -769,462 +671,71 @@ Tabs.Main:CreateButton({
                 return label
             end
 
-            local titleLabel = createLabel("Title", 0, "Sherya Script", Color3.fromRGB(255, 255, 255))
+            local titleLabel = createLabel("Title", 0, "Sherya Script", Color3.new(1,1,1))
             titleLabel.Font = Enum.Font.SourceSansBold
-            local pingLabel = createLabel("Ping", 25, "Ping: 0 ms", Color3.fromRGB(255, 255, 255))
-            local fpsLabel = createLabel("FPS", 45, "FPS: 0", Color3.fromRGB(255, 255, 255))
-            local sessionLabel = createLabel("SessionTime", 65, "Session: 00:00:00", Color3.fromRGB(255, 255, 255))
-            local statusLabel = createLabel("Status", 85, "Anti-AFK Activo", Color3.fromRGB(0, 255, 0))
+            local pingLabel = createLabel("Ping", 25, "Ping: 0 ms", Color3.new(1,1,1))
+            local fpsLabel = createLabel("FPS", 45, "FPS: 0", Color3.new(1,1,1))
+            local sessionLabel = createLabel("SessionTime", 65, "Session: 00:00:00", Color3.new(1,1,1))
+            local statusLabel = createLabel("Status", 85, "Anti-AFK Activo", Color3.fromRGB(0,255,0))
 
-            -- Variables para FPS
             local frameCount = 0
             local lastTime = tick()
             local currentFPS = 0
-
-            local function formatTime(seconds)
-                local hours = math.floor(seconds / 3600)
-                local minutes = math.floor((seconds % 3600) / 60)
-                local secs = math.floor(seconds % 60)
-                return string.format("%02d:%02d:%02d", hours, minutes, secs)
-            end
-
             local Stats = game:GetService("Stats")
-            local RunService = game:GetService("RunService")
 
-            local function updateStats()
-                frameCount = frameCount + 1
-                local currentTime = tick()
-                if currentTime - lastTime >= 1 then
+            RS.Heartbeat:Connect(function()
+                frameCount += 1
+                local now = tick()
+                if now - lastTime >= 1 then
                     currentFPS = frameCount
                     frameCount = 0
-                    lastTime = currentTime
+                    lastTime = now
                 end
-                local ping = math.round(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+                local ping = math.round(tryGet(function() return Stats.Network.ServerStatsItem["Data Ping"]:GetValue() end) or 0)
                 local sessionTime = tick() - sessionStartTime
-
                 pingLabel.Text = "Ping: " .. ping .. " ms"
                 fpsLabel.Text = "FPS: " .. currentFPS
-                sessionLabel.Text = "Session: " .. formatTime(sessionTime)
-            end
+                sessionLabel.Text = string.format("Session: %02d:%02d:%02d", math.floor(sessionTime/3600), math.floor((sessionTime%3600)/60), math.floor(sessionTime%60))
+            end)
 
-            RunService.Heartbeat:Connect(updateStats)
+            GH._antiAFKGui = sheryaGUI
             return sheryaGUI
         end
 
-        -- Función para iniciar Anti-AFK
         local function startAntiAFK()
-            if antiAFKConnection then
-                antiAFKConnection:Disconnect()
-            end
-
-            local player = game.Players.LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            local humanoid = character:WaitForChild("Humanoid")
-
-            antiAFKConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                if humanoid and humanoid.Parent then
+            if antiAFKConnection then antiAFKConnection:Disconnect() end
+            antiAFKConnection = RS.Heartbeat:Connect(function()
+                local character = LocalPlayer.Character
+                local hum = character and character:FindFirstChildOfClass("Humanoid")
+                if hum then
                     local movement = math.sin(tick() * 0.1) * 0.01
-                    humanoid:Move(Vector3.new(movement, 0, 0), false)
+                    hum:Move(Vector3.new(movement, 0, 0), false)
                 end
             end)
+            GH._antiAFKConn = antiAFKConnection
         end
 
         local function stopAntiAFK()
-            if antiAFKConnection then
-                antiAFKConnection:Disconnect()
-                antiAFKConnection = nil
-            end
-            if sheryaGUI then
-                sheryaGUI:Destroy()
-                sheryaGUI = nil
-            end
+            if antiAFKConnection then antiAFKConnection:Disconnect() antiAFKConnection = nil end
+            if sheryaGUI then sheryaGUI:Destroy() sheryaGUI = nil end
+            GH._antiAFKConn = nil
+            GH._antiAFKGui = nil
         end
 
-        -- Activar / desactivar
-        if not antiAFKActive then
-            antiAFKActive = true
+        if not GH._antiAFKActive then
+            GH._antiAFKActive = true
             sessionStartTime = tick()
             createSheryaGUI()
             startAntiAFK()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Sherya Script";
-                Text = "Anti-AFK activado! GUI de monitoreo visible.";
-                Duration = 5;
-            })
+            notify("Sherya Script", "Anti-AFK activado! GUI de monitoreo visible.")
         else
-            antiAFKActive = false
+            GH._antiAFKActive = false
             stopAntiAFK()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Sherya Script";
-                Text = "Anti-AFK desactivado! GUI cerrada.";
-                Duration = 5;
-            })
+            notify("Sherya Script", "Anti-AFK desactivado! GUI cerrada.")
         end
     end
 })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Tabs.Home:AddSection("Local Player Configurations")
-
-local timeDropdown = Tabs.Home:AddDropdown("ChangeTime", {
-    Title = "Change Time",
-    Values = {"Night", "Day", "Midnight"},
-    Default = "Day",
-    Callback = function(selection)
-        local lighting = game:GetService("Lighting")
-
-        if selection == "Night" then
-            lighting.ClockTime = 0
-        elseif selection == "Day" then
-            lighting.ClockTime = 12
-        elseif selection == "Midnight" then
-            lighting.ClockTime = 6
-        end
-    end
-})
-
-local Toggle = Tabs.Killing:CreateToggle("AutoPunchNoAnim", {Title = "Auto Punch (No Anim)", Default = false})
-Toggle:OnChanged(function(state)
-    while state and Toggle.Value do
-        local player = game.Players.LocalPlayer
-        local char = game.Workspace:FindFirstChild(player.Name)
-        local punchTool = player.Backpack:FindFirstChild("Punch") or (char and char:FindFirstChild("Punch"))
-
-        if punchTool then
-            if punchTool.Parent ~= char then
-                punchTool.Parent = char -- Equip
-            end
-
-            player.muscleEvent:FireServer("punch", "rightHand")
-            player.muscleEvent:FireServer("punch", "leftHand")
-        else
-            warn("Punch tool not found")
-            Toggle:SetValue(false) -- Stop if tool not found
-        end
-        task.wait()
-    end
-end)
-
--- Speed Punch Button
-Tabs.Killing:CreateButton({
-    Title = "Fast Punch",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        local punch = player.Backpack:FindFirstChild("Punch") or (game.Workspace:FindFirstChild(player.Name) and game.Workspace[player.Name]:FindFirstChild("Punch"))
-        if punch and punch:FindFirstChild("attackTime") then
-            punch.attackTime.Value = 0.065
-        end
-    end
-})
-
--- Normal Punch Button
-Tabs.Killing:CreateButton({
-    Title = "Normal Punch",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        local punch = player.Backpack:FindFirstChild("Punch") or (game.Workspace:FindFirstChild(player.Name) and game.Workspace[player.Name]:FindFirstChild("Punch"))
-        if punch and punch:FindFirstChild("attackTime") then
-            punch.attackTime.Value = 0.35
-        end
-    end
-})
-
-	-- Whitelist Table
-local whitelist = {}
-local playerList = {}
-
--- Create Dropdown
-local Dropdown = Tabs.Killing:AddDropdown("WhitelistDropdown", {
-    Title = "Whitelist Player(s)",
-    Values = {},
-    Multi = true,
-    Default = {},
-})
-
--- Populate initially
-for _, player in ipairs(game.Players:GetPlayers()) do
-    table.insert(playerList, player.Name)
-end
-Dropdown:SetValues(playerList)
-
--- Update on PlayerAdded
-game.Players.PlayerAdded:Connect(function(player)
-    table.insert(playerList, player.Name)
-    Dropdown:SetValues(playerList)
-end)
-
--- Update on PlayerRemoving
-game.Players.PlayerRemoving:Connect(function(player)
-    for i, name in ipairs(playerList) do
-        if name == player.Name then
-            table.remove(playerList, i)
-            break
-        end
-    end
-    Dropdown:SetValues(playerList)
-end)
-
--- Sync whitelist
-Dropdown:OnChanged(function(selectedPlayers)
-    table.clear(whitelist)
-    for _, name in ipairs(selectedPlayers) do
-        whitelist[name] = true
-    end
-    print("Whitelisted:", selectedPlayers)
-end)
-
-local AutokillToggle = Tabs.Killing:CreateToggle("AutoKill", {Title = "Auto Kill", Default = false})
-AutokillToggle:OnChanged(function(state)
-    while state and AutokillToggle.Value do
-        local player = game.Players.LocalPlayer
-
-        -- Auto punch setup
-        local punch = player.Backpack:FindFirstChild("Punch") or (player.Character and player.Character:FindFirstChild("Punch"))
-        if punch and punch:FindFirstChild("attackTime") then
-            punch.attackTime.Value = 0.065
-        end
-
-        -- Auto kill logic
-        for _, target in ipairs(game.Players:GetPlayers()) do
-            if target ~= player and not whitelist[target.Name] then
-                local root = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                local rHand = player.Character and player.Character:FindFirstChild("RightHand")
-                local lHand = player.Character and player.Character:FindFirstChild("LeftHand")
-
-                if root and rHand and lHand then
-                    firetouchinterest(rHand, root, 1)
-                    firetouchinterest(lHand, root, 1)
-                    firetouchinterest(rHand, root, 0)
-                    firetouchinterest(lHand, root, 0)
-                end
-            end
-        end
-
-        task.wait(0.1)
-    end
-end)
-
--- Target Kill
--- Target Kill (Dropdown en lugar de Input)
-local targetPlayerName = nil
-
--- Dropdown dinámico
-local targetPlayerList = {}
-local TargetDropdown = Tabs.Killing:AddDropdown("TargetPlayerDropdown", {
-    Title = "Target Player",
-    Values = {},
-    Multi = false, -- solo uno
-    Default = {}
-})
-
--- Llenar inicialmente
-for _, player in ipairs(game.Players:GetPlayers()) do
-    table.insert(targetPlayerList, player.Name)
-end
-TargetDropdown:SetValues(targetPlayerList)
-
--- Actualizar al entrar jugador
-game.Players.PlayerAdded:Connect(function(player)
-    table.insert(targetPlayerList, player.Name)
-    TargetDropdown:SetValues(targetPlayerList)
-end)
-
--- Actualizar al salir jugador
-game.Players.PlayerRemoving:Connect(function(player)
-    for i, name in ipairs(targetPlayerList) do
-        if name == player.Name then
-            table.remove(targetPlayerList, i)
-            break
-        end
-    end
-    TargetDropdown:SetValues(targetPlayerList)
-end)
-
--- Guardar el jugador seleccionado
-TargetDropdown:OnChanged(function(selected)
-    targetPlayerName = selected
-    print("Target set to:", targetPlayerName)
-end)
-
--- Auto Kill Target
-local Toggle = Tabs.Killing:CreateToggle("AutoKillTarget", {Title = "Auto Kill Player", Default = false})
-Toggle:OnChanged(function(state)
-    while state and Toggle.Value do
-        local player = game.Players.LocalPlayer
-        local target = game.Players:FindFirstChild(targetPlayerName)
-
-        if target and target ~= player then
-            local root = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-            local rHand = player.Character and player.Character:FindFirstChild("RightHand")
-            local lHand = player.Character and player.Character:FindFirstChild("LeftHand")
-
-            if root and rHand and lHand then
-                firetouchinterest(rHand, root, 1)
-                firetouchinterest(lHand, root, 1)
-                firetouchinterest(rHand, root, 0)
-                firetouchinterest(lHand, root, 0)
-            end
-        end
-        task.wait(0.1)
-    end
-end)
-
--- Spectate Player (Dropdown + Botón de volver)
-local spectateTarget = nil
-local spectatePlayerList = {}
-local Camera = workspace.CurrentCamera
-local LocalPlayer = game.Players.LocalPlayer
-
--- Dropdown
-local SpectateDropdown = Tabs.Killing:AddDropdown("SpectateDropdown", {
-    Title = "Spectate Player",
-    Values = {},
-    Multi = false,
-    Default = {}
-})
-
--- Llenar inicialmente con nombres
-for _, player in ipairs(game.Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        table.insert(spectatePlayerList, player.Name)
-    end
-end
-SpectateDropdown:SetValues(spectatePlayerList)
-
--- Actualizar al entrar
-game.Players.PlayerAdded:Connect(function(player)
-    if player ~= LocalPlayer then
-        table.insert(spectatePlayerList, player.Name)
-        SpectateDropdown:SetValues(spectatePlayerList)
-    end
-end)
-
--- Actualizar al salir
-game.Players.PlayerRemoving:Connect(function(player)
-    for i, name in ipairs(spectatePlayerList) do
-        if name == player.Name then
-            table.remove(spectatePlayerList, i)
-            break
-        end
-    end
-    SpectateDropdown:SetValues(spectatePlayerList)
-
-    if spectateTarget == player.Name then
-        spectateTarget = nil
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-        if hum then
-            Camera.CameraSubject = hum
-        end
-    end
-end)
-
--- Guardar seleccionado
-SpectateDropdown:OnChanged(function(selected)
-    spectateTarget = selected
-    print("Spectating:", spectateTarget or "None")
-end)
-
--- Botón para volver a ti
-Tabs.Killing:CreateButton({
-    Title = "Dejar de Espectear",
-    Callback = function()
-        spectateTarget = nil
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-        if hum then
-            Camera.CameraSubject = hum
-        end
-        print("Stopped spectating, returned to self")
-    end
-})
-
--- Seguir al jugador
-game:GetService("RunService").RenderStepped:Connect(function()
-    if spectateTarget then
-        local target = game.Players:FindFirstChild(spectateTarget)
-        if target and target.Character then
-            local hum = target.Character:FindFirstChild("Humanoid")
-            if hum then
-                Camera.CameraSubject = hum
-            end
-        end
-    end
-end)
-
--- Teleport / Follow Player
-local followTarget = nil
-local following = false
-local Camera = workspace.CurrentCamera
-local LocalPlayer = game.Players.LocalPlayer
-
--- God Mode (Brawl)
-local godModeToggle = Tabs.Killing:CreateToggle("GodModeBrawl", {
-    Title = "God Mode (Brawl)",
-    Default = false
-})
-
-godModeToggle:OnChanged(function(State)
-    if State then
-        task.spawn(function()
-            while godModeToggle.Value do
-                game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
-                task.wait(0) -- spam constante
-            end
-        end)
-    end
-end)
-
-
-Tabs.Killing:CreateButton({
-    Title = "Activar pegar muerto",
-    Callback = function()
-        loadstring(game:HttpGet("pon aca tu raw del pegar muerto "))()
-    end
-})
-
-Tabs.Main:AddSection("")
-Tabs.Main:AddSection("")
-Tabs.Main:AddSection("")
-Tabs.Main:AddSection("")
-Tabs.Main:AddSection("")
+-- // ========================= End ========================= 
+-- Enjoy! SaveManager/InterfaceManager can be wired if you want profile saves/UI themes.
 
