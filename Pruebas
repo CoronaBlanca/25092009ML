@@ -64,16 +64,24 @@ BrawlFolder:AddSwitch("God Mode Brawl", function(State)
     end
 end)
 
-local autoWinBrawlToggle = BrawlFolder:AddSwitch("Auto Win Brawls", function(bool)
+-- Auto Win Brawl Toggle
+local autoWinBrawlSwitch = BrawlFolder:AddSwitch("Auto Win Brawls", function(bool)
     getgenv().autoWinBrawl = bool
-
+    
+    -- Equip Punch Tool function - will be called repeatedly
     local function equipPunch()
         if not getgenv().autoWinBrawl then return end
+        
         local character = game.Players.LocalPlayer.Character
         if not character then return false end
+        
+        -- Check if already equipped
         if character:FindFirstChild("Punch") then return true end
+        
+        -- Try to equip from backpack
         local backpack = game.Players.LocalPlayer.Backpack
         if not backpack then return false end
+        
         for _, tool in pairs(backpack:GetChildren()) do
             if tool.ClassName == "Tool" and tool.Name == "Punch" then
                 tool.Parent = character
@@ -82,102 +90,170 @@ local autoWinBrawlToggle = BrawlFolder:AddSwitch("Auto Win Brawls", function(boo
         end
         return false
     end
-
+    
+    -- Safe player check function
     local function isValidTarget(player)
         if not player or not player.Parent then return false end
         if player == Players.LocalPlayer then return false end
-        if _G.whitelistedPlayers and table.find(_G.whitelistedPlayers, player.Name) then return false end
+        if whitelist[player.UserId] then return false end
+        
         local character = player.Character
         if not character or not character.Parent then return false end
+        
         local humanoid = character:FindFirstChild("Humanoid")
         if not humanoid then return false end
+        
+        -- Multiple health checks to be absolutely certain
         if not humanoid.Health or humanoid.Health <= 0 then return false end
         if humanoid:GetState() == Enum.HumanoidStateType.Dead then return false end
+        
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         if not rootPart or not rootPart.Parent then return false end
+        
         return true
     end
-
+    
+    -- Safe local player check function
     local function isLocalPlayerReady()
         local player = game.Players.LocalPlayer
         if not player then return false end
+        
         local character = player.Character
         if not character or not character.Parent then return false end
+        
         local humanoid = character:FindFirstChild("Humanoid")
         if not humanoid or humanoid.Health <= 0 then return false end
+        
         local leftHand = character:FindFirstChild("LeftHand")
         local rightHand = character:FindFirstChild("RightHand")
+        
         return (leftHand ~= nil or rightHand ~= nil)
     end
-
+    
+    -- Safe firetouchinterest function
     local function safeTouchInterest(targetPart, localPart)
         if not targetPart or not targetPart.Parent then return false end
         if not localPart or not localPart.Parent then return false end
-        local success = pcall(function()
+        
+        local success, err = pcall(function()
             firetouchinterest(targetPart, localPart, 0)
             task.wait(0.01)
             firetouchinterest(targetPart, localPart, 1)
         end)
+        
         return success
     end
-
-    if bool then
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                if not getgenv().autoWinBrawl then break end
-                pcall(function()
-                    if game.Players.LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible then
-                        game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                        game.Players.LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible = false
-                    end
-                end)
+    
+    -- Join Brawl Loop
+    task.spawn(function()
+        while getgenv().autoWinBrawl and task.wait(0.5) do
+            if not getgenv().autoWinBrawl then break end
+            
+            if game.Players.LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                game.Players.LocalPlayer.PlayerGui.gameGui.brawlJoinLabel.Visible = false
             end
-        end)
-
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                if not getgenv().autoWinBrawl then break end
-                equipPunch()
+        end
+    end)
+    
+    -- Equipment loop - keeps trying to equip the punch
+    task.spawn(function()
+        while getgenv().autoWinBrawl and task.wait(0.5) do
+            if not getgenv().autoWinBrawl then break end
+            equipPunch()
+        end
+    end)
+    
+    -- Auto Punch Loop - keeps punching
+    task.spawn(function()
+        while getgenv().autoWinBrawl and task.wait(0.1) do
+            if not getgenv().autoWinBrawl then break end
+            
+            if isLocalPlayerReady() and game.ReplicatedStorage.brawlInProgress.Value then
+                local player = game.Players.LocalPlayer
+                pcall(function() player.muscleEvent:FireServer("punch", "rightHand") end)
+                pcall(function() player.muscleEvent:FireServer("punch", "leftHand") end)
             end
-        end)
-
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.1) do
-                if not getgenv().autoWinBrawl then break end
-                if isLocalPlayerReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    local player = game.Players.LocalPlayer
-                    pcall(function() player.muscleEvent:FireServer("punch", "rightHand") end)
-                    pcall(function() player.muscleEvent:FireServer("punch", "leftHand") end)
-                end
-            end
-        end)
-
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.05) do
-                if not getgenv().autoWinBrawl then break end
-                if isLocalPlayerReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    local character = game.Players.LocalPlayer.Character
-                    local leftHand = character:FindFirstChild("LeftHand")
-                    local rightHand = character:FindFirstChild("RightHand")
-                    for _, player in pairs(Players:GetPlayers()) do
-                        if not getgenv().autoWinBrawl then break end
-                        pcall(function()
-                            if isValidTarget(player) then
-                                local targetRoot = player.Character.HumanoidRootPart
-                                if leftHand then
-                                    safeTouchInterest(targetRoot, leftHand)
-                                end
-                                if rightHand then
-                                    safeTouchInterest(targetRoot, rightHand)
-                                end
+        end
+    end)
+    
+    -- Main Kill Loop - extremely resilient
+    task.spawn(function()
+        while getgenv().autoWinBrawl and task.wait(0.05) do
+            if not getgenv().autoWinBrawl then break end
+            
+            -- Only proceed if local player is ready and brawl is in progress
+            if isLocalPlayerReady() and game.ReplicatedStorage.brawlInProgress.Value then
+                local character = game.Players.LocalPlayer.Character
+                local leftHand = character:FindFirstChild("LeftHand")
+                local rightHand = character:FindFirstChild("RightHand")
+                
+                -- Process each player individually with error handling
+                for _, player in pairs(Players:GetPlayers()) do
+                    -- Skip if toggle was turned off mid-loop
+                    if not getgenv().autoWinBrawl then break end
+                    
+                    -- Use pcall for the entire player processing to prevent any errors from breaking the loop
+                    pcall(function()
+                        if isValidTarget(player) then
+                            local targetRoot = player.Character.HumanoidRootPart
+                            
+                            -- Try left hand
+                            if leftHand then
+                                safeTouchInterest(targetRoot, leftHand)
                             end
-                        end)
-                        task.wait(0.01)
-                    end
+                            
+                            -- Try right hand
+                            if rightHand then
+                                safeTouchInterest(targetRoot, rightHand)
+                            end
+                        end
+                    end)
+                    
+                    -- Small delay between players to prevent overwhelming
+                    task.wait(0.01)
                 end
             end
-        end)
-    end
+        end
+    end)
+    
+    -- Recovery system - if the main loop somehow breaks, this will restart it
+    task.spawn(function()
+        local lastPlayerCount = 0
+        local stuckCounter = 0
+        
+        while getgenv().autoWinBrawl and task.wait(1) do
+            if not getgenv().autoWinBrawl then break end
+            
+            -- Check if we're processing players
+            local currentPlayerCount = #Players:GetPlayers()
+            
+            -- If player count changed but we're not seeing any activity, restart the kill loop
+            if currentPlayerCount ~= lastPlayerCount then
+                stuckCounter = 0
+                lastPlayerCount = currentPlayerCount
+            else
+                stuckCounter = stuckCounter + 1
+                
+                -- If we seem stuck for too long, force re-equip the tool
+                if stuckCounter > 5 then
+                    stuckCounter = 0
+                    
+                    -- Force re-equip
+                    pcall(function()
+                        local character = game.Players.LocalPlayer.Character
+                        if character and character:FindFirstChild("Punch") then
+                            character.Punch.Parent = game.Players.LocalPlayer.Backpack
+                            task.wait(0.1)
+                            equipPunch()
+                        else
+                            equipPunch()
+                        end
+                    end)
+                end
+            end
+        end
+    end)
 end)
 
 BrawlFolder:AddSwitch("Auto Join Brawls", function(bool)
@@ -3484,28 +3560,37 @@ local blacklistKillSwitch =
     end
 )
 
-local spyTargetDropdown = Killer:AddDropdown("Select View Target", function(name)
-    targetPlayerName = name
+local spyTargetDropdown = Killer:AddDropdown("Select View Target", function(text)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        local optionText = plr.DisplayName .. " | " .. plr.Name
+        if text == optionText and plr ~= player then
+            targetPlayerName = plr.Name
+            break
+        end
+    end
 end)
 
+-- Añadir jugadores presentes
 for _, plr in ipairs(Players:GetPlayers()) do
-    if plr ~= LocalPlayer then
-        spyTargetDropdown:Add(plr.Name)
+    if plr ~= player then
+        spyTargetDropdown:Add(plr.DisplayName .. " | " .. plr.Name)
     end
 end
 
+-- Cuando entra un jugador
 Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then
-        spyTargetDropdown:Add(plr.Name)
+    if plr ~= player then
+        spyTargetDropdown:Add(plr.DisplayName .. " | " .. plr.Name)
     end
 end)
 
+-- Cuando sale un jugador
 Players.PlayerRemoving:Connect(function(plr)
-    if plr ~= LocalPlayer then
+    if plr ~= player then
         spyTargetDropdown:Clear()
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer then
-                spyTargetDropdown:Add(p.Name)
+            if p ~= player then
+                spyTargetDropdown:Add(p.DisplayName .. " | " .. p.Name)
             end
         end
     end
