@@ -1,1 +1,352 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VIM = game:GetService("VirtualInputManager") -- Faltaba esta declaración
+
+-- Player reference
+local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer -- Para consistencia con el resto del código
+
+-- Library initialization
+local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+local window = DrRayLibrary:Load("Sherya Script", "Default")
+
+-- Tabs
+local mainTab = DrRayLibrary.newTab("Main", "ImageIdHere")
+local miscTab = DrRayLibrary.newTab("Misc", "ImageIdHere")
+local killerTab = DrRayLibrary.newTab("Killer", "ImageIdHere")
+local playersTab = DrRayLibrary.newTab("Teleport", "ImageIdHere")
+local creditsTab = DrRayLibrary.newTab("Credits", "ImageIdHere")
+
+mainTab.newLabel("Auto Brawls")
+
+-- God Mode Toggle
+local godModeToggle = false
+mainTab.newToggle("God Mode (Brawl)", "Enables god mode in brawls", false, function(State)
+    godModeToggle = State
+    if State then
+        task.spawn(function()
+            while godModeToggle do
+                pcall(function()
+                    ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                end)
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+-- Auto Win Brawls
+mainTab.newToggle("Auto Win Brawls", "Automatically wins brawls", false, function(bool)
+    getgenv().autoWinBrawl = bool
+
+    local function equipPunch()
+        if not getgenv().autoWinBrawl then return false end
+        local character = player.Character
+        if not character then return false end
+        if character:FindFirstChild("Punch") then return true end
+        
+        local backpack = player.Backpack
+        if not backpack then return false end
+        
+        for _, tool in pairs(backpack:GetChildren()) do
+            if tool.ClassName == "Tool" and tool.Name == "Punch" then
+                tool.Parent = character
+                return true
+            end
+        end
+        return false
+    end
+
+    local function isValidTarget(targetPlayer)
+        if not targetPlayer or not targetPlayer.Parent then return false end
+        if targetPlayer == player then return false end
+        if _G.whitelistedPlayers and table.find(_G.whitelistedPlayers, targetPlayer.Name) then return false end
+        
+        local character = targetPlayer.Character
+        if not character or not character.Parent then return false end
+        
+        local humanoid = character:FindFirstChild("Humanoid")
+        if not humanoid then return false end
+        if not humanoid.Health or humanoid.Health <= 0 then return false end
+        if humanoid:GetState() == Enum.HumanoidStateType.Dead then return false end
+        
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if not rootPart or not rootPart.Parent then return false end
+        
+        return true
+    end
+
+    local function isLocalPlayerReady()
+        if not player then return false end
+        local character = player.Character
+        if not character or not character.Parent then return false end
+        
+        local humanoid = character:FindFirstChild("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then return false end
+        
+        local leftHand = character:FindFirstChild("LeftHand")
+        local rightHand = character:FindFirstChild("RightHand")
+        return (leftHand ~= nil or rightHand ~= nil)
+    end
+
+    local function safeTouchInterest(targetPart, localPart)
+        if not targetPart or not targetPart.Parent then return false end
+        if not localPart or not localPart.Parent then return false end
+        
+        local success = pcall(function()
+            firetouchinterest(targetPart, localPart, 0)
+            task.wait(0.01)
+            firetouchinterest(targetPart, localPart, 1)
+        end)
+        return success
+    end
+
+    if bool then
+        -- Auto join brawls
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.5) do
+                if not getgenv().autoWinBrawl then break end
+                pcall(function()
+                    if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                        ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                        player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                    end
+                end)
+            end
+        end)
+
+        -- Auto equip punch
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.5) do
+                if not getgenv().autoWinBrawl then break end
+                equipPunch()
+            end
+        end)
+
+        -- Auto punch
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.1) do
+                if not getgenv().autoWinBrawl then break end
+                if isLocalPlayerReady() and ReplicatedStorage.brawlInProgress.Value then
+                    pcall(function() 
+                        player.muscleEvent:FireServer("punch", "rightHand") 
+                    end)
+                    pcall(function() 
+                        player.muscleEvent:FireServer("punch", "leftHand") 
+                    end)
+                end
+            end
+        end)
+
+        -- Touch detection for damage
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.05) do
+                if not getgenv().autoWinBrawl then break end
+                if isLocalPlayerReady() and ReplicatedStorage.brawlInProgress.Value then
+                    local character = player.Character
+                    local leftHand = character:FindFirstChild("LeftHand")
+                    local rightHand = character:FindFirstChild("RightHand")
+                    
+                    for _, targetPlayer in pairs(Players:GetPlayers()) do
+                        if not getgenv().autoWinBrawl then break end
+                        pcall(function()
+                            if isValidTarget(targetPlayer) then
+                                local targetRoot = targetPlayer.Character.HumanoidRootPart
+                                if leftHand then
+                                    safeTouchInterest(targetRoot, leftHand)
+                                end
+                                if rightHand then
+                                    safeTouchInterest(targetRoot, rightHand)
+                                end
+                            end
+                        end)
+                        task.wait(0.01)
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Auto Join Brawls (separate toggle)
+mainTab.newToggle("Auto Join Brawls", "Automatically joins brawls", false, function(bool)
+    getgenv().autoJoinBrawl = bool
+    if bool then
+        task.spawn(function()
+            while getgenv().autoJoinBrawl and task.wait(0.5) do
+                if not getgenv().autoJoinBrawl then break end
+                pcall(function()
+                    if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                        ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                        player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                    end
+                end)
+            end
+        end)
+    end
+end)
+
+mainTab.newLabel("Jungle Gym")
+
+-- Helper functions for Jungle Gym
+local function pressE()
+    VIM:SendKeyEvent(true, "E", false, game)
+    task.wait(0.1)
+    VIM:SendKeyEvent(false, "E", false, game)
+end
+
+local function autoLift()
+    while getgenv().working do
+        LocalPlayer.muscleEvent:FireServer("rep")
+        task.wait() -- More efficient than task.wait(0) or task.wait(small number)
+    end
+end
+
+local function teleportAndStart(machineName, position)
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = position
+        task.wait(0.1)
+        pressE()
+        task.spawn(autoLift) -- Use task.spawn to prevent UI freezing
+    end
+end
+
+-- Jungle Gym Bench Press
+mainTab.newToggle("Jungle Bench Press", "Automatically Bench Press", false, function(bool)
+    if getgenv().working and not bool then
+        getgenv().working = false
+        return
+    end
+    
+    getgenv().working = bool
+    if bool then
+        teleportAndStart("Bench Press", CFrame.new(-8173, 64, 1898))
+    end
+end)
+
+-- Jungle Gym Squat
+mainTab.newToggle("Jungle Squat", "Automatically Squat", false, function(bool)
+    if getgenv().working and not bool then
+        getgenv().working = false
+        return
+    end
+    
+    getgenv().working = bool
+    if bool then
+        teleportAndStart("Squat", CFrame.new(-8352, 34, 2878))
+    end
+end)
+
+-- Jungle Gym Pull Up
+mainTab.newToggle("Jungle Pull Up", "Automatically Pull Up", false, function(bool)
+    if getgenv().working and not bool then
+        getgenv().working = false
+        return
+    end
+    
+    getgenv().working = bool
+    if bool then
+        teleportAndStart("Pull Up", CFrame.new(-8666, 34, 2070))
+    end
+end)
+
+-- Jungle Gym Boulder
+mainTab.newToggle("Jungle Boulder", "Automatically Boulder", false, function(bool)
+    if getgenv().working and not bool then
+        getgenv().working = false
+        return
+    end
+    
+    getgenv().working = bool
+    if bool then
+        teleportAndStart("Boulder", CFrame.new(-8621, 34, 2684))
+    end
+end)
+
+mainTab.newLabel("Gyms")
+-- Workout positions
+local workoutPositions = {
+    ["Bench Press"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4111.91748, 1020.46674, -3799.97217),
+        ["Muscle King Gym"] = CFrame.new(-8590.06152, 46.0167427, -6043.34717)
+    },
+    ["Squat"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
+        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
+    },
+    ["Deadlift"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
+        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
+    },
+    ["Pull Up"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
+        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
+    }
+}
+
+-- Workout types y traducciones
+local workoutTypes = {"Bench Press", "Squat", "Deadlift", "Pull Up"}
+local workoutTranslations = {
+    ["Bench Press"] = "Bench Press",
+    ["Squat"] = "Squat",
+    ["Deadlift"] = "Dead Lift",
+    ["Pull Up"] = "Pull Up"
+}
+local gymLocations = {"Eternal Gym", "Legend Gym", "Muscle King Gym"}
+
+-- Guardar toggles
+local gymToggles = {}
+
+-- Función placeholder para teletransportarse y empezar workout
+local function teleportAndStart(workoutType, cframe)
+    player.Character:SetPrimaryPartCFrame(cframe)
+    print("Starting workout: " .. workoutType)
+end
+
+-- Crear dropdowns y toggles directamente en el tab
+for _, workoutType in ipairs(workoutTypes) do
+    local spanishName = workoutTranslations[workoutType]
+
+    -- Dropdown
+    local selectedGym = gymLocations[1]
+    mainTab:NewDropdown(spanishName .. " - Gym", gymLocations, function(value)
+        selectedGym = value
+        _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] = value
+    end)
+
+    -- Toggle
+    local toggle = mainTab:NewToggle(spanishName, false, function(state)
+        getgenv().workingGym = state
+        getgenv().currentWorkoutType = workoutType
+
+        if state then
+            local gymToUse = _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] or gymLocations[1]
+            
+            if workoutPositions[workoutType] and workoutPositions[workoutType][gymToUse] then
+                -- Desactivar otros toggles
+                for otherType, otherToggle in pairs(gymToggles) do
+                    if otherType ~= workoutType then
+                        otherToggle:Set(false)
+                    end
+                end
+                
+                teleportAndStart(workoutType, workoutPositions[workoutType][gymToUse])
+            else
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "Error",
+                    Text = "Position not found for " .. workoutType .. " in " .. gymToUse,
+                    Duration = 5
+                })
+            end
+        end
+    end)
+
+    gymToggles[workoutType] = toggle
+end
 
