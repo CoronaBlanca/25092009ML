@@ -1953,10 +1953,6 @@ getgenv().AutoFarming = false
 
 farmpacks:AddLabel("-----Fast Rebirth OP-----")
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
 -- Configuración de mascotas
 local FarmPet = "Swift Samurai"
 local RebirthPet = "Tribal Overlord"
@@ -2007,63 +2003,61 @@ local function getStrengthRequiredForRebirth()
     return math.floor(baseStrength)
 end
 
--- Switch en Elerium V2
-farmpacks:AddSwitch({
-    text = "Auto Rebirth",
-    flag = "auto_rebirth",
-    state = false,
-    callback = function(state)
-        getgenv().AutoFarming = state
+-- Switch Auto Rebirth (forma corta)
+farmpacks:AddSwitch("Auto Rebirth", function(state)
+    getgenv().AutoFarming = state
 
-        if state then
-            warn("⚡ AutoFarming ACTIVADO")
+    if state then
+        warn("⚡ AutoFarming ACTIVADO")
 
-            task.spawn(function()
-                while getgenv().AutoFarming do
-                    local requiredStrength = getStrengthRequiredForRebirth()
-                    print("Necesario para renacer:", requiredStrength)
+        task.spawn(function()
+            while getgenv().AutoFarming do
+                local requiredStrength = getStrengthRequiredForRebirth()
+                print("Necesario para renacer:", requiredStrength)
 
-                    -- Fase de farmeo
-                    unequipAllPets()
-                    equipPetByName(FarmPet)
+                -- Fase de farmeo
+                unequipAllPets()
+                equipPetByName(FarmPet)
 
-                    while LocalPlayer.leaderstats.Strength.Value < requiredStrength and getgenv().AutoFarming do
-                        for _ = 1, 10 do
-                            LocalPlayer.muscleEvent:FireServer("rep")
-                        end
-                        task.wait()
+                while LocalPlayer.leaderstats.Strength.Value < requiredStrength and getgenv().AutoFarming do
+                    for _ = 1, 10 do
+                        LocalPlayer.muscleEvent:FireServer("rep")
                     end
-
-                    if not getgenv().AutoFarming then break end
-
-                    -- Fase de renacimiento
-                    unequipAllPets()
-                    equipPetByName(RebirthPet)
-
-                    local oldRebirths = LocalPlayer.leaderstats.Rebirths.Value
-                    repeat
-                        ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-                        task.wait(0.1)
-                    until LocalPlayer.leaderstats.Rebirths.Value > oldRebirths or not getgenv().AutoFarming
-
-                    print("Renacimiento hecho. Reiniciando ciclo.")
+                    task.wait()
                 end
 
-                print("🛑 AutoFarming DETENIDO")
-            end)
+                if not getgenv().AutoFarming then break end
 
-        else
-            warn("🛑 AutoFarming DESACTIVADO")
-        end
+                -- Fase de renacimiento
+                unequipAllPets()
+                equipPetByName(RebirthPet)
+
+                local oldRebirths = LocalPlayer.leaderstats.Rebirths.Value
+                repeat
+                    ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+                    task.wait(0.1)
+                until LocalPlayer.leaderstats.Rebirths.Value > oldRebirths or not getgenv().AutoFarming
+
+                print("Renacimiento hecho. Reiniciando ciclo.")
+            end
+
+            print("🛑 AutoFarming DETENIDO")
+        end)
+
+    else
+        warn("🛑 AutoFarming DESACTIVADO")
     end
-})
+end)
 
 farmpacks:AddLabel("-----Fast Strength OP-----")
 
+-- Switch Fast Strength (forma corta)
 farmpacks:AddSwitch("Pack Farm | Fast Strength", function(state)
     fastStrength = state
 
     if state then
+        warn("⚡ Fast Strength ACTIVADO")
+
         if packFarmTarget and targetPackToggle then
             packFarmTarget = false
             targetPackToggle:Set(false)
@@ -2083,7 +2077,9 @@ farmpacks:AddSwitch("Pack Farm | Fast Strength", function(state)
             end
             unequipAllPets()
         end)
+
     else
+        warn("🛑 Fast Strength DESACTIVADO")
         unequipAllPets()
     end
 end)
