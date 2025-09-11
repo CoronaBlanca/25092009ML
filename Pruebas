@@ -29,16 +29,17 @@ end
 -- Initialize Anti-AFK system
 setupAntiAFK()
 
--- Create Main Window
-local window = library:AddWindow("Sherya Script | Galaxy Hub", {
-    main_color = Color3.fromRGB(75, 0, 130),
-    min_size = Vector2.new(550, 800),
+-- Crear ventana
+local window = library:AddWindow("Lunar Hub | Hello " .. username, {
+    main_color = Color3.fromRGB(34, 139, 34),
+    min_size = Vector2.new(600, 800),
     can_resize = true,
 })
 
 local mainTab = window:AddTab("Main")
 local farmTab = window:AddTab("Farm")
 local miscTab = window:AddTab("Misc")
+local farmpacks = window:AddTab("Packs")
 local pets = window:AddTab("Pets")
 local SpecsTab = window:AddTab("Stats")
 local Calculator = window:AddTab("Calculator")
@@ -1947,6 +1948,236 @@ misc5Folder:AddSwitch("Full Walk on Water", function(bool)
         makePartsWalkthrough()
     end
 end)
+
+getgenv().AutoFarming = false
+
+farmpacks:AddLabel("-----Fast Rebirth OP-----")
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Configuración de mascotas
+local FarmPet = "Swift Samurai"
+local RebirthPet = "Tribal Overlord"
+
+-- Funciones para equipar/unequipar
+local function equipPetByName(name)
+    local petsFolder = LocalPlayer:FindFirstChild("petsFolder")
+    if not petsFolder then return end
+    for _, folder in pairs(petsFolder:GetChildren()) do
+        if folder:IsA("Folder") then
+            for _, pet in pairs(folder:GetChildren()) do
+                if pet.Name == name then
+                    ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
+                end
+            end
+        end
+    end
+end
+
+local function unequipAllPets()
+    local petsFolder = LocalPlayer:FindFirstChild("petsFolder")
+    if not petsFolder then return end
+    for _, folder in pairs(petsFolder:GetChildren()) do
+        if folder:IsA("Folder") then
+            for _, pet in pairs(folder:GetChildren()) do
+                ReplicatedStorage.rEvents.equipPetEvent:FireServer("unequipPet", pet)
+            end
+        end
+    end
+    task.wait(0.1)
+end
+
+local function getGoldenRebirthCount()
+    local ultimates = LocalPlayer:FindFirstChild("ultimatesFolder")
+    if ultimates and ultimates:FindFirstChild("Golden Rebirth") then
+        return ultimates["Golden Rebirth"].Value
+    end
+    return 0
+end
+
+local function getStrengthRequiredForRebirth()
+    local rebirths = LocalPlayer.leaderstats.Rebirths.Value
+    local baseStrength = 10000 + (5000 * rebirths)
+    local golden = getGoldenRebirthCount()
+    if golden >= 1 and golden <= 5 then
+        baseStrength = baseStrength * (1 - golden * 0.1)
+    end
+    return math.floor(baseStrength)
+end
+
+-- Switch en Elerium V2
+farmpacks:AddSwitch({
+    text = "Auto Rebirth",
+    flag = "auto_rebirth",
+    state = false,
+    callback = function(state)
+        getgenv().AutoFarming = state
+
+        if state then
+            warn("⚡ AutoFarming ACTIVADO")
+
+            task.spawn(function()
+                while getgenv().AutoFarming do
+                    local requiredStrength = getStrengthRequiredForRebirth()
+                    print("Necesario para renacer:", requiredStrength)
+
+                    -- Fase de farmeo
+                    unequipAllPets()
+                    equipPetByName(FarmPet)
+
+                    while LocalPlayer.leaderstats.Strength.Value < requiredStrength and getgenv().AutoFarming do
+                        for _ = 1, 10 do
+                            LocalPlayer.muscleEvent:FireServer("rep")
+                        end
+                        task.wait()
+                    end
+
+                    if not getgenv().AutoFarming then break end
+
+                    -- Fase de renacimiento
+                    unequipAllPets()
+                    equipPetByName(RebirthPet)
+
+                    local oldRebirths = LocalPlayer.leaderstats.Rebirths.Value
+                    repeat
+                        ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+                        task.wait(0.1)
+                    until LocalPlayer.leaderstats.Rebirths.Value > oldRebirths or not getgenv().AutoFarming
+
+                    print("Renacimiento hecho. Reiniciando ciclo.")
+                end
+
+                print("🛑 AutoFarming DETENIDO")
+            end)
+
+        else
+            warn("🛑 AutoFarming DESACTIVADO")
+        end
+    end
+})
+
+farmpacks:AddLabel("-----Fast Strength OP-----")
+
+farmpacks:AddSwitch("Pack Farm | Fast Strength", function(state)
+    fastStrength = state
+
+    if state then
+        if packFarmTarget and targetPackToggle then
+            packFarmTarget = false
+            targetPackToggle:Set(false)
+        end
+        if packFarmInfinite and infinitePackToggle then
+            packFarmInfinite = false
+            infinitePackToggle:Set(false)
+        end
+
+        task.spawn(function()
+            equipSpecificPacks("Swift Samurai", 8)
+            while fastStrength do
+                for _ = 1, 25 do
+                    player.muscleEvent:FireServer("rep")
+                end
+                task.wait()
+            end
+            unequipAllPets()
+        end)
+    else
+        unequipAllPets()
+    end
+end)
+
+farmpacks:AddLabel("-----Optimización-----")
+
+farmpacks:AddButton("Anti Lag OP", function()
+    local player = game.Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+    local lighting = game:GetService("Lighting")
+
+    -- Eliminar todas las GUIs del jugador
+    for _, gui in pairs(playerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            gui:Destroy()
+        end
+    end
+
+    -- Quitar partículas
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") then
+            obj:Destroy()
+        end
+    end
+
+    -- Quitar luces
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+            obj:Destroy()
+        end
+    end
+
+    -- Eliminar cielos existentes
+    for _, v in pairs(lighting:GetChildren()) do
+        if v:IsA("Sky") then
+            v:Destroy()
+        end
+    end
+
+    -- Crear cielo oscuro
+    local darkSky = Instance.new("Sky")
+    darkSky.Name = "DarkSky"
+    darkSky.SkyboxBk = "rbxassetid://0"
+    darkSky.SkyboxDn = "rbxassetid://0"
+    darkSky.SkyboxFt = "rbxassetid://0"
+    darkSky.SkyboxLf = "rbxassetid://0"
+    darkSky.SkyboxRt = "rbxassetid://0"
+    darkSky.SkyboxUp = "rbxassetid://0"
+    darkSky.Parent = lighting
+
+    lighting.Brightness = 0
+    lighting.ClockTime = 0
+    lighting.TimeOfDay = "00:00:00"
+    lighting.OutdoorAmbient = Color3.new(0, 0, 0)
+    lighting.Ambient = Color3.new(0, 0, 0)
+    lighting.FogColor = Color3.new(0, 0, 0)
+    lighting.FogEnd = 100
+
+    -- Refuerzo periódico del anti-lag
+    task.spawn(function()
+        while true do
+            wait(5)
+            if not lighting:FindFirstChild("DarkSky") then
+                darkSky:Clone().Parent = lighting
+            end
+            lighting.Brightness = 0
+            lighting.ClockTime = 0
+            lighting.OutdoorAmbient = Color3.new(0, 0, 0)
+            lighting.Ambient = Color3.new(0, 0, 0)
+            lighting.FogColor = Color3.new(0, 0, 0)
+            lighting.FogEnd = 100
+        end
+    end)
+end)
+
+farmpacks:AddLabel("-----Secion-----")
+-- Tiempo de sesión
+local sessionStartTime = tick()
+local sessionLabel = Opti:AddLabel("Tiempo de Sesión: 0d 0h 0m 0s")
+sessionLabel.TextSize = 20
+
+task.spawn(function()
+    while true do
+        local elapsed = tick() - sessionStartTime
+        local days = math.floor(elapsed / 86400)
+        local hours = math.floor((elapsed % 86400) / 3600)
+        local minutes = math.floor((elapsed % 3600) / 60)
+        local seconds = math.floor(elapsed % 60)
+        
+        sessionLabel.Text = string.format("Tiempo de Sesión: %dd %dh %dm %ds", days, hours, minutes, seconds)
+        task.wait(1)
+    end
+end)
+
 
 -- Crystal data structure with exact names from your original code
 local crystalData = {
@@ -4227,20 +4458,17 @@ end)
 -- ============================================================================
 
 creditsTab:AddLabel("╭──────────────────────────╮")
-creditsTab:AddLabel(" Script hecho por Isabella")
+creditsTab:AddLabel(" Lunar Hub")
 creditsTab:AddLabel("╰──────────────────────────╯")
 creditsTab:AddLabel("")
-creditsTab:AddLabel("User de Roblox: MissSherya")
-creditsTab:AddLabel("Instagram: Sherya_Luck")
-creditsTab:AddLabel("TikTok: Sherya6000")
-creditsTab:AddLabel("Discord: isabella_hrz")
+creditsTab:AddLabel("Script Made By")
+creditsTab:AddLabel("Havoc (script_kingsean)")
+creditsTab:AddLabel("Sherya (isabella_hrz)")
+creditsTab:AddLabel("Pxrson (.pxrson)")
 creditsTab:AddLabel("")
-creditsTab:AddLabel("Thanks por usar el script")
+creditsTab:AddLabel("Thanks for using the script")
 creditsTab:AddLabel("")
-creditsTab:AddLabel("Recomienda el script para hacer mas actualizaciones")
-creditsTab:AddLabel("Hago peticiones de otros juegos")
-creditsTab:AddLabel("Diviertete amiguito")
 
-creditsTab:AddButton("Servidor Discord", function()
-    setclipboard("https://discord.gg/rnDrhTZZCF")
+creditsTab:AddButton("Server Discord", function()
+    setclipboard("https://discord.gg/2UBcJa4mEc")
 end)
