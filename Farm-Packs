@@ -502,7 +502,7 @@ Strength:AddSwitch("Pack Farm | Fast Strength", function(state)
         task.spawn(function()
             equipSpecificPacks("Swift Samurai", 8)
             while fastStrength do
-                for _ = 1, 28 do
+                for _ = 1, 25 do
                     player.muscleEvent:FireServer("rep")
                 end
                 task.wait()
