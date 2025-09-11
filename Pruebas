@@ -30,8 +30,8 @@ end
 setupAntiAFK()
 
 -- Create Main Window
-local window = library:AddWindow("Sherya Script | Galaxy Hub", {
-    main_color = Color3.fromRGB(75, 0, 130),
+local window = library:AddWindow("Lunar Hub | Hello " .. game.Players.LocalPlayer.Name, {
+    main_color = Color3.fromRGB(34, 139, 34), -- Verde bosque
     min_size = Vector2.new(550, 800),
     can_resize = true,
 })
@@ -39,7 +39,6 @@ local window = library:AddWindow("Sherya Script | Galaxy Hub", {
 local mainTab = window:AddTab("Main")
 local farmTab = window:AddTab("Farm")
 local miscTab = window:AddTab("Misc")
-local packsTab = window:AddTab("Packs")
 local pets = window:AddTab("Pets")
 local SpecsTab = window:AddTab("Stats")
 local Calculator = window:AddTab("Calculator")
@@ -634,7 +633,7 @@ local function createSheryaGUI()
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Parent = sheryaGUI
-    mainFrame.BackgroundColor3 = Color3.fromRGB(75, 0, 130) -- Morado
+    mainFrame.BackgroundColor3 = Color3.fromRGB(34, 139, 34) -- Morado
     mainFrame.BorderSizePixel = 0
     mainFrame.Position = UDim2.new(0, 10, 0, 10)
     mainFrame.Size = UDim2.new(0, 250, 0, 120)
@@ -654,7 +653,7 @@ local function createSheryaGUI()
     titleLabel.Position = UDim2.new(0, 0, 0, 0)
     titleLabel.Size = UDim2.new(1, 0, 0, 25)
     titleLabel.Font = Enum.Font.SourceSansBold
-    titleLabel.Text = "Sherya Script"
+    titleLabel.Text = "Lunar Hub"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.TextScaled = true
     titleLabel.TextWrapped = true
@@ -1946,294 +1945,6 @@ misc5Folder:AddSwitch("Full Walk on Water", function(bool)
         createParts()
     else
         makePartsWalkthrough()
-    end
-end)
-
-local Farm = packsTab
-
-local targetRebirth = math.huge
-local packFarmTarget = false
-local packFarmInfinite = false
-local fastStrength = false
-
-local packRebirthValues = {
-    [0] = 1,  
-    [1] = 2,  
-    [2] = 4,  
-    [3] = 6,  
-    [4] = 8,  
-    [5] = 10, 
-    [6] = 12, 
-    [7] = 14, 
-    [8] = 16  
-}
-
-local function unequipAllPets()
-    local petsFolder = player.petsFolder
-    for _, folder in pairs(petsFolder:GetChildren()) do
-        if folder:IsA("Folder") then
-            for _, pet in pairs(folder:GetChildren()) do
-                ReplicatedStorage.rEvents.equipPetEvent:FireServer("unequipPet", pet)
-            end
-        end
-    end
-    task.wait(0.1)
-end
-
-local function equipSpecificPacks(packName, count)
-    unequipAllPets()
-    task.wait(0.2)
-
-    local packs = {}
-    for _, pet in pairs(player.petsFolder.Unique:GetChildren()) do
-        if pet.Name == packName then
-            table.insert(packs, pet)
-        end
-    end
-
-    local packsToEquip = math.min(count, #packs)
-    for i = 1, packsToEquip do
-        ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", packs[i])
-        task.wait(0.1)
-    end
-
-    return packsToEquip
-end
-
-local function findMachine(machineName)
-    local machine = workspace.machinesFolder:FindFirstChild(machineName)
-    if not machine then
-        for _, folder in pairs(workspace:GetChildren()) do
-            if folder:IsA("Folder") and folder.Name:find("machines") then
-                machine = folder:FindFirstChild(machineName)
-                if machine then break end
-            end
-        end
-    end
-    return machine
-end
-
-local function pressE()
-    local vim = game:GetService("VirtualInputManager")
-    vim:SendKeyEvent(true, "E", false, game)
-    task.wait(0.1)
-    vim:SendKeyEvent(false, "E", false, game)
-end
-
-local isPositionLocked = false
-local originalCFrame = nil
-
-local function lockPosition(lock)
-    isPositionLocked = lock
-
-    if lock and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        originalCFrame = player.Character.HumanoidRootPart.CFrame
-
-        if not _G.positionConnection then
-            _G.positionConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                if isPositionLocked and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and originalCFrame then
-                    player.Character.HumanoidRootPart.CFrame = originalCFrame
-                    player.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-                    player.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
-                end
-            end)
-        end
-    elseif not lock and _G.positionConnection then
-        _G.positionConnection:Disconnect()
-        _G.positionConnection = nil
-    end
-end
-
-Farm:AddTextBox("Target Rebirth Amount", function(text)
-    local num = tonumber(text)
-    if num then
-        targetRebirth = num
-    else
-        targetRebirth = math.huge
-    end
-end)
-
-local targetPackToggle = Farm:AddSwitch("Pack Farm | Target", function(bool)
-    packFarmTarget = bool
-
-    if bool then
-        if packFarmInfinite then
-            packFarmInfinite = false
-            infinitePackToggle:Set(false)
-        end
-
-        if fastStrength then
-            fastStrength = false
-            fastStrengthToggle:Set(false)
-        end
-
-        if targetRebirth ~= math.huge and targetRebirth > player.leaderstats.Rebirths.Value then
-            task.spawn(function()
-                lockPosition(true)
-
-                while packFarmTarget do
-                    local currentRebirths = player.leaderstats.Rebirths.Value
-
-                    if currentRebirths >= targetRebirth then
-                        packFarmTarget = false
-                        targetPackToggle:Set(false)
-                        lockPosition(false)
-                        break
-                    end
-
-                    local rebirthCost = 10000 + (5000 * currentRebirths)
-                    if player.ultimatesFolder:FindFirstChild("Golden Rebirth") then
-                        local goldenRebirths = player.ultimatesFolder["Golden Rebirth"].Value
-                        rebirthCost = math.floor(rebirthCost * (1 - (goldenRebirths * 0.1)))
-                    end
-
-                    local rebirthsNeeded = targetRebirth - currentRebirths
-
-                    local packCount = 0
-
-                    if rebirthsNeeded == 1 then
-                        packCount = 0
-                    else
-                        for i = 8, 1, -1 do
-                            if packRebirthValues[i] <= rebirthsNeeded then
-                                packCount = i
-                                break
-                            end
-                        end
-                    end
-
-                    equipSpecificPacks("Swift Samurai", 8)
-
-                    while packFarmTarget and player.leaderstats.Strength.Value < rebirthCost do
-                        for i = 1, 10 do
-                            player.muscleEvent:FireServer("rep")
-                        end
-                        task.wait()
-                    end
-
-                    equipSpecificPacks("Tribal Overlord", packCount)
-
-                    local machine = findMachine("Jungle Bar Lift")
-                    if machine and machine:FindFirstChild("interactSeat") then
-                        player.Character.HumanoidRootPart.CFrame = machine.interactSeat.CFrame * CFrame.new(0, 3, 0)
-                        repeat
-                            task.wait(0.1)
-                            pressE()
-                        until player.Character.Humanoid.Sit
-                    end
-
-                    local initialRebirths = player.leaderstats.Rebirths.Value
-                    repeat
-                        ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-                        task.wait(0.1)
-                    until player.leaderstats.Rebirths.Value > initialRebirths
-
-                    task.wait(0.5)
-                end
-
-                lockPosition(false)
-                unequipAllPets()
-            end)
-        else
-            packFarmTarget = false
-            targetPackToggle:Set(false)
-        end
-    else
-        lockPosition(false)
-        unequipAllPets()
-    end
-end)
-
-local infinitePackToggle = Farm:AddSwitch("Pack Farm | Infinite", function(bool)
-    packFarmInfinite = bool
-
-    if bool then
-        if packFarmTarget then
-            packFarmTarget = false
-            targetPackToggle:Set(false)
-        end
-
-        if fastStrength then
-            fastStrength = false
-            fastStrengthToggle:Set(false)
-        end
-
-        task.spawn(function()
-            lockPosition(true)
-
-            while packFarmInfinite do
-                local currentRebirths = player.leaderstats.Rebirths.Value
-
-                local rebirthCost = 10000 + (5000 * currentRebirths)
-                if player.ultimatesFolder:FindFirstChild("Golden Rebirth") then
-                    local goldenRebirths = player.ultimatesFolder["Golden Rebirth"].Value
-                    rebirthCost = math.floor(rebirthCost * (1 - (goldenRebirths * 0.1)))
-                end
-
-                equipSpecificPacks("Swift Samurai", 8)
-
-                while packFarmInfinite and player.leaderstats.Strength.Value < rebirthCost do
-                    for i = 1, 10 do
-                        player.muscleEvent:FireServer("rep")
-                    end
-                    task.wait()
-                end
-
-                equipSpecificPacks("Tribal Overlord", 8)
-
-                local machine = findMachine("Jungle Bar Lift")
-                if machine and machine:FindFirstChild("interactSeat") then
-                    player.Character.HumanoidRootPart.CFrame = machine.interactSeat.CFrame * CFrame.new(0, 3, 0)
-                    repeat
-                        task.wait(0.1)
-                        pressE()
-                    until player.Character.Humanoid.Sit
-                end
-
-                local initialRebirths = player.leaderstats.Rebirths.Value
-                repeat
-                    ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-                    task.wait(0.1)
-                until player.leaderstats.Rebirths.Value > initialRebirths
-
-                task.wait(0.5)
-            end
-
-            lockPosition(false)
-            unequipAllPets()
-        end)
-    else
-        lockPosition(false)
-        unequipAllPets()
-    end
-end)
-
-local fastStrengthToggle = Farm:AddSwitch("Pack Farm | Fast Strength", function(bool)
-    fastStrength = bool
-
-    if bool then
-        if packFarmTarget then
-            packFarmTarget = false
-            targetPackToggle:Set(false)
-        end
-
-        if packFarmInfinite then
-            packFarmInfinite = false
-            infinitePackToggle:Set(false)
-        end
-
-        task.spawn(function()
-            equipSpecificPacks("Swift Samurai", 8)
-
-            while fastStrength do
-                for i = 1, 25 do
-                    player.muscleEvent:FireServer("rep")
-                end
-                task.wait()
-            end
-        end)
-    else
-        unequipAllPets()
     end
 end)
 
@@ -4097,7 +3808,7 @@ local showKillsButton = Killer:AddButton("Kill Counter UI", function()
 			local killsFrame = Instance.new("Frame")
 			killsFrame.Size = UDim2.new(0, 180, 0, 55)
 			killsFrame.Position = UDim2.new(0.5, -90, 0, 60)
-			killsFrame.BackgroundColor3 = Color3.fromRGB(75, 0, 130)
+			killsFrame.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
 			killsFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 			killsFrame.Active = true
 			killsFrame.Draggable = true
@@ -4107,7 +3818,7 @@ local showKillsButton = Killer:AddButton("Kill Counter UI", function()
 			titleLabel.Size = UDim2.new(1, 0, 0, 20)
 			titleLabel.Position = UDim2.new(0, 0, 0, 0)
 			titleLabel.BackgroundTransparency = 1
-			titleLabel.Text = "Sherya Script"
+			titleLabel.Text = "Lunar Hub"
 			titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 			titleLabel.Font = Enum.Font.SourceSansBold
 			titleLabel.TextScaled = true
@@ -4516,17 +4227,17 @@ end)
 -- ============================================================================
 
 creditsTab:AddLabel("╭──────────────────────────╮")
-creditsTab:AddLabel(" Lunar Hub")
+creditsTab:AddLabel("         Lunar Hub")
 creditsTab:AddLabel("╰──────────────────────────╯")
 creditsTab:AddLabel("")
 creditsTab:AddLabel("Script Made By")
-creditsTab:AddLabel("Havoc (script_kingsean)")
-creditsTab:AddLabel("Sherya (isabella_hrz)")
-creditsTab:AddLabel("Pxrson (.pxrson)")
+creditsTab:AddLabel("")
+creditsTab:AddLabel("Havoc")
+creditsTab:AddLabel("Sherya")
 creditsTab:AddLabel("")
 creditsTab:AddLabel("Thanks for using the script")
 creditsTab:AddLabel("")
 
-creditsTab:AddButton("Server Discord", function()
+creditsTab:AddButton("Servidor Discord", function()
     setclipboard("https://discord.gg/2UBcJa4mEc")
 end)
