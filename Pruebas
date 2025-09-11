@@ -29,13 +29,11 @@ end
 -- Initialize Anti-AFK system
 setupAntiAFK()
 
--- Crear ventana
 local window = library:AddWindow("Lunar Hub", {
-    main_color = Color3.fromRGB(75, 0, 130),
-    min_size = Vector2.new(34, 139, 34),
+    main_color = Color3.fromRGB(34, 139, 34),
+    min_size = Vector2.new(600, 800),
     can_resize = true,
 })
-
 
 local mainTab = window:AddTab("Main")
 local farmTab = window:AddTab("Farm")
