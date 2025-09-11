@@ -29,16 +29,17 @@ end
 -- Initialize Anti-AFK system
 setupAntiAFK()
 
-local window = library:AddWindow("Lunar Hub", {
-    main_color = Color3.fromRGB(34, 139, 34),
-    min_size = Vector2.new(600, 800),
+-- Create Main Window
+local window = library:AddWindow("Sherya Script | Galaxy Hub", {
+    main_color = Color3.fromRGB(75, 0, 130),
+    min_size = Vector2.new(550, 800),
     can_resize = true,
 })
 
 local mainTab = window:AddTab("Main")
 local farmTab = window:AddTab("Farm")
 local miscTab = window:AddTab("Misc")
-local farmpacks = window:AddTab("Packs")
+local packsTab = window:AddTab("Packs")
 local pets = window:AddTab("Pets")
 local SpecsTab = window:AddTab("Stats")
 local Calculator = window:AddTab("Calculator")
@@ -1948,291 +1949,293 @@ misc5Folder:AddSwitch("Full Walk on Water", function(bool)
     end
 end)
 
-getgenv().AutoFarming = false
+local Farm = packsTab
 
--- Sección de Packs arreglada
--- Agregar estas variables al principio del script, después de las otras declaraciones
-
--- Variables necesarias para los packs
-local targetRebirthValue = 1
+local targetRebirth = math.huge
 local packFarmTarget = false
 local packFarmInfinite = false
 local fastStrength = false
-local targetPackToggle = nil
-local infinitePackToggle = nil
 
--- Función para actualizar estadísticas
-local function updateStats()
-    -- Función básica de actualización - puedes expandirla según necesites
-    print("Stats updated - Target rebirths:", targetRebirthValue)
-end
-
--- Funciones para manejar mascotas
-local function equipSpecificPacks(petName, count)
-    local petsFolder = LocalPlayer:FindFirstChild("petsFolder")
-    if not petsFolder then 
-        print("No se encontró la carpeta de mascotas")
-        return 
-    end
-    
-    local equipped = 0
-    for _, folder in pairs(petsFolder:GetChildren()) do
-        if folder:IsA("Folder") and equipped < count then
-            for _, pet in pairs(folder:GetChildren()) do
-                if pet.Name == petName and equipped < count then
-                    local success = pcall(function()
-                        ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
-                    end)
-                    if success then
-                        equipped = equipped + 1
-                        print("Equipado:", petName, "- Total:", equipped)
-                    end
-                end
-            end
-        end
-    end
-end
+local packRebirthValues = {
+    [0] = 1,  
+    [1] = 2,  
+    [2] = 4,  
+    [3] = 6,  
+    [4] = 8,  
+    [5] = 10, 
+    [6] = 12, 
+    [7] = 14, 
+    [8] = 16  
+}
 
 local function unequipAllPets()
-    local petsFolder = LocalPlayer:FindFirstChild("petsFolder")
-    if not petsFolder then return end
-    
+    local petsFolder = player.petsFolder
     for _, folder in pairs(petsFolder:GetChildren()) do
         if folder:IsA("Folder") then
             for _, pet in pairs(folder:GetChildren()) do
-                pcall(function()
-                    ReplicatedStorage.rEvents.equipPetEvent:FireServer("unequipPet", pet)
-                end)
+                ReplicatedStorage.rEvents.equipPetEvent:FireServer("unequipPet", pet)
             end
         end
     end
     task.wait(0.1)
-    print("Todas las mascotas desequipadas")
 end
 
--- Función para equipar mascota por nombre
-local function equipPetByName(name)
-    local petsFolder = LocalPlayer:FindFirstChild("petsFolder")
-    if not petsFolder then return end
-    
-    for _, folder in pairs(petsFolder:GetChildren()) do
-        if folder:IsA("Folder") then
-            for _, pet in pairs(folder:GetChildren()) do
-                if pet.Name == name then
-                    pcall(function()
-                        ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
-                    end)
-                    print("Equipado:", name)
-                    return
-                end
+local function equipSpecificPacks(packName, count)
+    unequipAllPets()
+    task.wait(0.2)
+
+    local packs = {}
+    for _, pet in pairs(player.petsFolder.Unique:GetChildren()) do
+        if pet.Name == packName then
+            table.insert(packs, pet)
+        end
+    end
+
+    local packsToEquip = math.min(count, #packs)
+    for i = 1, packsToEquip do
+        ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", packs[i])
+        task.wait(0.1)
+    end
+
+    return packsToEquip
+end
+
+local function findMachine(machineName)
+    local machine = workspace.machinesFolder:FindFirstChild(machineName)
+    if not machine then
+        for _, folder in pairs(workspace:GetChildren()) do
+            if folder:IsA("Folder") and folder.Name:find("machines") then
+                machine = folder:FindFirstChild(machineName)
+                if machine then break end
             end
         end
     end
-    print("No se encontró la mascota:", name)
+    return machine
 end
 
--- Funciones para obtener información de renacimientos
-local function getGoldenRebirthCount()
-    local ultimates = LocalPlayer:FindFirstChild("ultimatesFolder")
-    if ultimates and ultimates:FindFirstChild("Golden Rebirth") then
-        return ultimates["Golden Rebirth"].Value
+local function pressE()
+    local vim = game:GetService("VirtualInputManager")
+    vim:SendKeyEvent(true, "E", false, game)
+    task.wait(0.1)
+    vim:SendKeyEvent(false, "E", false, game)
+end
+
+local isPositionLocked = false
+local originalCFrame = nil
+
+local function lockPosition(lock)
+    isPositionLocked = lock
+
+    if lock and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        originalCFrame = player.Character.HumanoidRootPart.CFrame
+
+        if not _G.positionConnection then
+            _G.positionConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if isPositionLocked and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and originalCFrame then
+                    player.Character.HumanoidRootPart.CFrame = originalCFrame
+                    player.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+                    player.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
+                end
+            end)
+        end
+    elseif not lock and _G.positionConnection then
+        _G.positionConnection:Disconnect()
+        _G.positionConnection = nil
     end
-    return 0
 end
 
-local function getStrengthRequiredForRebirth()
-    local rebirths = LocalPlayer.leaderstats.Rebirths.Value
-    local baseStrength = 10000 + (5000 * rebirths)
-    local golden = getGoldenRebirthCount()
-    if golden >= 1 and golden <= 5 then
-        baseStrength = baseStrength * (1 - golden * 0.1)
+Farm:AddTextBox("Target Rebirth Amount", function(text)
+    local num = tonumber(text)
+    if num then
+        targetRebirth = num
+    else
+        targetRebirth = math.huge
     end
-    return math.floor(baseStrength)
-end
+end)
 
--- Ahora puedes agregar la sección de farmpacks sin problemas:
+local targetPackToggle = Farm:AddSwitch("Pack Farm | Target", function(bool)
+    packFarmTarget = bool
 
--- Variables globales para controlar los estados
-getgenv().AutoFarming = false
+    if bool then
+        if packFarmInfinite then
+            packFarmInfinite = false
+            infinitePackToggle:Set(false)
+        end
 
--- Configuración de mascotas
-local FarmPet = "Swift Samurai"
-local RebirthPet = "Tribal Overlord"
+        if fastStrength then
+            fastStrength = false
+            fastStrengthToggle:Set(false)
+        end
 
-farmpacks:AddLabel("-----Fast Rebirth OP-----")
+        if targetRebirth ~= math.huge and targetRebirth > player.leaderstats.Rebirths.Value then
+            task.spawn(function()
+                lockPosition(true)
 
--- Switch Auto Rebirth
-farmpacks:AddSwitch("Auto Rebirth", function(state)
-    getgenv().AutoFarming = state
+                while packFarmTarget do
+                    local currentRebirths = player.leaderstats.Rebirths.Value
 
-    if state then
-        print("⚡ AutoFarming ACTIVADO")
-
-        task.spawn(function()
-            while getgenv().AutoFarming do
-                local requiredStrength = getStrengthRequiredForRebirth()
-                print("Necesario para renacer:", requiredStrength)
-
-                -- Fase de farmeo
-                unequipAllPets()
-                task.wait(0.5)
-                equipPetByName(FarmPet)
-
-                while LocalPlayer.leaderstats.Strength.Value < requiredStrength and getgenv().AutoFarming do
-                    for _ = 1, 10 do
-                        pcall(function()
-                            LocalPlayer.muscleEvent:FireServer("rep")
-                        end)
+                    if currentRebirths >= targetRebirth then
+                        packFarmTarget = false
+                        targetPackToggle:Set(false)
+                        lockPosition(false)
+                        break
                     end
-                    task.wait()
+
+                    local rebirthCost = 10000 + (5000 * currentRebirths)
+                    if player.ultimatesFolder:FindFirstChild("Golden Rebirth") then
+                        local goldenRebirths = player.ultimatesFolder["Golden Rebirth"].Value
+                        rebirthCost = math.floor(rebirthCost * (1 - (goldenRebirths * 0.1)))
+                    end
+
+                    local rebirthsNeeded = targetRebirth - currentRebirths
+
+                    local packCount = 0
+
+                    if rebirthsNeeded == 1 then
+                        packCount = 0
+                    else
+                        for i = 8, 1, -1 do
+                            if packRebirthValues[i] <= rebirthsNeeded then
+                                packCount = i
+                                break
+                            end
+                        end
+                    end
+
+                    equipSpecificPacks("Swift Samurai", 8)
+
+                    while packFarmTarget and player.leaderstats.Strength.Value < rebirthCost do
+                        for i = 1, 10 do
+                            player.muscleEvent:FireServer("rep")
+                        end
+                        task.wait()
+                    end
+
+                    equipSpecificPacks("Tribal Overlord", packCount)
+
+                    local machine = findMachine("Jungle Bar Lift")
+                    if machine and machine:FindFirstChild("interactSeat") then
+                        player.Character.HumanoidRootPart.CFrame = machine.interactSeat.CFrame * CFrame.new(0, 3, 0)
+                        repeat
+                            task.wait(0.1)
+                            pressE()
+                        until player.Character.Humanoid.Sit
+                    end
+
+                    local initialRebirths = player.leaderstats.Rebirths.Value
+                    repeat
+                        ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+                        task.wait(0.1)
+                    until player.leaderstats.Rebirths.Value > initialRebirths
+
+                    task.wait(0.5)
                 end
 
-                if not getgenv().AutoFarming then break end
-
-                -- Fase de renacimiento
+                lockPosition(false)
                 unequipAllPets()
-                task.wait(0.5)
-                equipPetByName(RebirthPet)
-
-                local oldRebirths = LocalPlayer.leaderstats.Rebirths.Value
-                repeat
-                    pcall(function()
-                        ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-                    end)
-                    task.wait(0.1)
-                until LocalPlayer.leaderstats.Rebirths.Value > oldRebirths or not getgenv().AutoFarming
-
-                print("Renacimiento completado. Reiniciando ciclo.")
-                task.wait(1)
-            end
-
-            print("🛑 AutoFarming DETENIDO")
-        end)
-
+            end)
+        else
+            packFarmTarget = false
+            targetPackToggle:Set(false)
+        end
     else
-        print("🛑 AutoFarming DESACTIVADO")
+        lockPosition(false)
         unequipAllPets()
     end
 end)
 
-farmpacks:AddLabel("-----Fast Strength OP-----")
+local infinitePackToggle = Farm:AddSwitch("Pack Farm | Infinite", function(bool)
+    packFarmInfinite = bool
 
--- Switch Fast Strength
-farmpacks:AddSwitch("Pack Farm | Fast Strength", function(state)
-    fastStrength = state
-
-    if state then
-        print("⚡ Fast Strength ACTIVADO")
-
-        -- Detener otros farms si están activos
-        if packFarmTarget and targetPackToggle then
+    if bool then
+        if packFarmTarget then
             packFarmTarget = false
             targetPackToggle:Set(false)
         end
-        if packFarmInfinite and infinitePackToggle then
+
+        if fastStrength then
+            fastStrength = false
+            fastStrengthToggle:Set(false)
+        end
+
+        task.spawn(function()
+            lockPosition(true)
+
+            while packFarmInfinite do
+                local currentRebirths = player.leaderstats.Rebirths.Value
+
+                local rebirthCost = 10000 + (5000 * currentRebirths)
+                if player.ultimatesFolder:FindFirstChild("Golden Rebirth") then
+                    local goldenRebirths = player.ultimatesFolder["Golden Rebirth"].Value
+                    rebirthCost = math.floor(rebirthCost * (1 - (goldenRebirths * 0.1)))
+                end
+
+                equipSpecificPacks("Swift Samurai", 8)
+
+                while packFarmInfinite and player.leaderstats.Strength.Value < rebirthCost do
+                    for i = 1, 10 do
+                        player.muscleEvent:FireServer("rep")
+                    end
+                    task.wait()
+                end
+
+                equipSpecificPacks("Tribal Overlord", 8)
+
+                local machine = findMachine("Jungle Bar Lift")
+                if machine and machine:FindFirstChild("interactSeat") then
+                    player.Character.HumanoidRootPart.CFrame = machine.interactSeat.CFrame * CFrame.new(0, 3, 0)
+                    repeat
+                        task.wait(0.1)
+                        pressE()
+                    until player.Character.Humanoid.Sit
+                end
+
+                local initialRebirths = player.leaderstats.Rebirths.Value
+                repeat
+                    ReplicatedStorage.rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+                    task.wait(0.1)
+                until player.leaderstats.Rebirths.Value > initialRebirths
+
+                task.wait(0.5)
+            end
+
+            lockPosition(false)
+            unequipAllPets()
+        end)
+    else
+        lockPosition(false)
+        unequipAllPets()
+    end
+end)
+
+local fastStrengthToggle = Farm:AddSwitch("Pack Farm | Fast Strength", function(bool)
+    fastStrength = bool
+
+    if bool then
+        if packFarmTarget then
+            packFarmTarget = false
+            targetPackToggle:Set(false)
+        end
+
+        if packFarmInfinite then
             packFarmInfinite = false
             infinitePackToggle:Set(false)
         end
 
         task.spawn(function()
             equipSpecificPacks("Swift Samurai", 8)
-            task.wait(1)
-            
+
             while fastStrength do
-                for _ = 1, 25 do
-                    pcall(function()
-                        LocalPlayer.muscleEvent:FireServer("rep")
-                    end)
+                for i = 1, 25 do
+                    player.muscleEvent:FireServer("rep")
                 end
                 task.wait()
             end
-            unequipAllPets()
         end)
-
     else
-        print("🛑 Fast Strength DESACTIVADO")
         unequipAllPets()
     end
 end)
-
-farmpacks:AddLabel("-----Optimización-----")
-
-farmpacks:AddButton("Anti Lag OP", function()
-    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-    local lighting = game:GetService("Lighting")
-
-    -- Eliminar GUIs del jugador (excepto las necesarias)
-    for _, gui in pairs(playerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") and gui.Name ~= "SheryaScript" then -- Mantener nuestra GUI
-            pcall(function()
-                gui:Destroy()
-            end)
-        end
-    end
-
-    -- Quitar partículas y efectos
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ParticleEmitter") or obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
-            pcall(function()
-                obj:Destroy()
-            end)
-        end
-    end
-
-    -- Configurar iluminación para mejor rendimiento
-    pcall(function()
-        -- Eliminar cielos existentes
-        for _, v in pairs(lighting:GetChildren()) do
-            if v:IsA("Sky") then
-                v:Destroy()
-            end
-        end
-
-        -- Crear cielo oscuro
-        local darkSky = Instance.new("Sky")
-        darkSky.Name = "DarkSky"
-        darkSky.SkyboxBk = "rbxassetid://0"
-        darkSky.SkyboxDn = "rbxassetid://0"
-        darkSky.SkyboxFt = "rbxassetid://0"
-        darkSky.SkyboxLf = "rbxassetid://0"
-        darkSky.SkyboxRt = "rbxassetid://0"
-        darkSky.SkyboxUp = "rbxassetid://0"
-        darkSky.Parent = lighting
-
-        lighting.Brightness = 0
-        lighting.ClockTime = 0
-        lighting.TimeOfDay = "00:00:00"
-        lighting.OutdoorAmbient = Color3.new(0, 0, 0)
-        lighting.Ambient = Color3.new(0, 0, 0)
-        lighting.FogColor = Color3.new(0, 0, 0)
-        lighting.FogEnd = 100
-    end)
-    
-    print("Anti-Lag aplicado correctamente")
-end)
-
-farmpacks:AddLabel("-----Sesión-----")
-
--- Tiempo de sesión (arreglado)
-local sessionStartTime = tick()
-local sessionLabel = farmpacks:AddLabel("Tiempo de Sesión: 0d 0h 0m 0s")
-
-task.spawn(function()
-    while true do
-        local elapsed = tick() - sessionStartTime
-        local days = math.floor(elapsed / 86400)
-        local hours = math.floor((elapsed % 86400) / 3600)
-        local minutes = math.floor((elapsed % 3600) / 60)
-        local seconds = math.floor(elapsed % 60)
-        
-        pcall(function()
-            sessionLabel.Text = string.format("Tiempo de Sesión: %dd %dh %dm %ds", days, hours, minutes, seconds)
-        end)
-        task.wait(1)
-    end
-end)
-
-print("Sección de Packs cargada correctamente")
 
 -- Crystal data structure with exact names from your original code
 local crystalData = {
