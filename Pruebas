@@ -32,7 +32,7 @@ setupAntiAFK()
 -- Create Main Window
 local window = library:AddWindow("Galaxy Hub | Hello " .. game.Players.LocalPlayer.Name, {
     main_color = Color3.fromRGB(128, 0, 128), -- Morado
-    min_size = Vector2.new(550, 800),
+    min_size = Vector2.new(600, 800),
     can_resize = true,
 })
 
@@ -2117,7 +2117,7 @@ premiumFolder:AddSwitch(
 
         equipUniquePetPremium("Swift Samurai")
 
-        for i = 1, 14 do
+        for i = 1, 25 do
             task.spawn(
                 function()
                     while isGrinding do
@@ -2179,17 +2179,7 @@ premiumFolder:AddButton(
     end
 )
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Pet section
-pets:AddLabel("Pets")
-
--- Create pet dropdown with the correct format
-local selectedPet = "Neon Guardian" -- Default selection
-local petDropdown = pets:AddDropdown("Seleccionar Mascota", function(text)
-    selectedPet = text
-    print("Mascota seleccionada: " .. text)
-end)
+premiumFolder:Show()
 
 -- Crystal data structure with exact names from your original code
 local crystalData = {
