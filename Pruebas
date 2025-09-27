@@ -32,14 +32,14 @@ setupAntiAFK()
 -- Create Main Window
 local window = library:AddWindow("Galaxy Hub | Hello " .. game.Players.LocalPlayer.Name, {
     main_color = Color3.fromRGB(128, 0, 128), -- Morado
-    min_size = Vector2.new(600, 800),
+    min_size = Vector2.new(550, 800),
     can_resize = true,
 })
 
 local mainTab = window:AddTab("Main")
 local farmTab = window:AddTab("Farm")
 local miscTab = window:AddTab("Misc")
-local premiumFolder = window:AddTab("Farm++")
+local PacksFolder = window:AddTab("Farm++")
 local pets = window:AddTab("Pets")
 local SpecsTab = window:AddTab("Stats")
 local Calculator = window:AddTab("Calculator")
@@ -1949,6 +1949,8 @@ misc5Folder:AddSwitch("Full Walk on Water", function(bool)
     end
 end)
 
+local premiumFolder = PacksFolder:AddFolder("Premium Systems")
+
 local function unequipAllPetsPremium()
     local petsFolder = player.petsFolder
     for _, folder in pairs(petsFolder:GetChildren()) do
@@ -2117,7 +2119,7 @@ premiumFolder:AddSwitch(
 
         equipUniquePetPremium("Swift Samurai")
 
-        for i = 1, 25 do
+        for i = 1, 14 do
             task.spawn(
                 function()
                     while isGrinding do
@@ -2129,6 +2131,241 @@ premiumFolder:AddSwitch(
         end
     end
 )
+
+PacksFolder:AddLabel("Session Statistics")
+
+local sessionStartTime = os.time()
+local sessionStartStrength = 0
+local sessionStartDurability = 0
+local sessionStartRebirths = 0
+local sessionStartKills = 0
+local sessionStartBrawls = 0
+local sessionStartAgility = 0
+local hasStartedTracking = false
+
+local sessionTimeLabel = StatsTab:AddLabel("Session Time: 00:00:00")
+local strengthStatsLabel = StatsTab:AddLabel("Strength: Waiting...")
+local strengthGainLabel = StatsTab:AddLabel("Gained: 0")
+local durabilityStatsLabel = StatsTab:AddLabel("Durability: Waiting...")
+local durabilityGainLabel = StatsTab:AddLabel("Gained: 0")
+local rebirthsStatsLabel = StatsTab:AddLabel("Rebirths: Waiting...")
+local rebirthsGainLabel = StatsTab:AddLabel("Gained: 0")
+local killsStatsLabel = StatsTab:AddLabel("Kills: Waiting...")
+local killsGainLabel = StatsTab:AddLabel("Gained: 0")
+local brawlsStatsLabel = StatsTab:AddLabel("Brawls: Waiting...")
+local brawlsGainLabel = StatsTab:AddLabel("Gained: 0")
+local agilityStatsLabel = StatsTab:AddLabel("Agility: Waiting...")
+local agilityGainLabel = StatsTab:AddLabel("Gained: 0")
+
+local strengthHistory = {}
+local durabilityHistory = {}
+local calculationInterval = 10
+local trackingStarted = false
+local fastRepStartTime = tick()
+
+local projectedStrengthLabel = StatsTab:AddLabel("Strength Pace: 0 /Hour | 0 /Day")
+local projectedDurabilityLabel = StatsTab:AddLabel("Durability Pace: 0 /Hour | 0 /Day")
+local fastRepTimeLabel = StatsTab:AddLabel("Fast Rep Time: 0d 0h 0m 0s")
+
+local function formatTime(seconds)
+    local days = math.floor(seconds / 86400)
+    local hours = math.floor((seconds % 86400) / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = seconds % 60
+
+    if days > 0 then
+        return string.format("%dd %02dh %02dm %02ds", days, hours, minutes, secs)
+    else
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    end
+end
+
+local function startTracking()
+    if not hasStartedTracking then
+        sessionStartStrength = player.leaderstats.Strength.Value
+        sessionStartDurability = player.Durability.Value
+        sessionStartKills = player.leaderstats.Kills.Value
+        sessionStartRebirths = player.leaderstats.Rebirths.Value
+        sessionStartBrawls = player.leaderstats.Brawls.Value
+        sessionStartAgility = player.Agility.Value
+        sessionStartTime = os.time()
+        hasStartedTracking = true
+    end
+end
+
+local function updateStats()
+    if not hasStartedTracking then
+        startTracking()
+    end
+
+    local currentStrength = player.leaderstats.Strength.Value
+    local currentDurability = player.Durability.Value
+    local currentKills = player.leaderstats.Kills.Value
+    local currentRebirths = player.leaderstats.Rebirths.Value
+    local currentBrawls = player.leaderstats.Brawls.Value
+    local currentAgility = player.Agility.Value
+
+    local strengthGain = currentStrength - sessionStartStrength
+    local durabilityGain = currentDurability - sessionStartDurability
+    local killsGain = currentKills - sessionStartKills
+    local rebirthsGain = currentRebirths - sessionStartRebirths
+    local brawlsGain = currentBrawls - sessionStartBrawls
+    local agilityGain = currentAgility - sessionStartAgility
+
+    strengthStatsLabel.Text = "Strength: " .. formatNumber(currentStrength)
+    strengthGainLabel.Text = "Gained: " .. formatNumber(strengthGain)
+
+    durabilityStatsLabel.Text = "Durability: " .. formatNumber(currentDurability)
+    durabilityGainLabel.Text = "Gained: " .. formatNumber(durabilityGain)
+
+    rebirthsStatsLabel.Text = "Rebirths: " .. formatNumber(currentRebirths)
+    rebirthsGainLabel.Text = "Gained: " .. formatNumber(rebirthsGain)
+
+    killsStatsLabel.Text = "Kills: " .. formatNumber(currentKills)
+    killsGainLabel.Text = "Gained: " .. formatNumber(killsGain)
+
+    brawlsStatsLabel.Text = "Brawls: " .. formatNumber(currentBrawls)
+    brawlsGainLabel.Text = "Gained: " .. formatNumber(brawlsGain)
+
+    agilityStatsLabel.Text = "Agility: " .. formatNumber(currentAgility)
+    agilityGainLabel.Text = "Gained: " .. formatNumber(agilityGain)
+
+    local elapsedTime = os.time() - sessionStartTime
+    sessionTimeLabel.Text = "Session Time: " .. formatTime(elapsedTime)
+end
+
+task.spawn(
+    function()
+        local lastCalcTime = tick()
+        local initialStrength = player.leaderstats.Strength.Value
+        local initialDurability = player.Durability.Value
+
+        while true do
+            local currentTime = tick()
+            local currentStrength = player.leaderstats.Strength.Value
+            local currentDurability = player.Durability.Value
+
+            if not trackingStarted and (currentStrength - initialStrength) >= 100e9 then
+                trackingStarted = true
+                fastRepStartTime = tick()
+                strengthHistory = {}
+                durabilityHistory = {}
+            end
+
+            if trackingStarted then
+                local elapsedTime = currentTime - fastRepStartTime
+                local days = math.floor(elapsedTime / (24 * 3600))
+                local hours = math.floor((elapsedTime % (24 * 3600)) / 3600)
+                local minutes = math.floor((elapsedTime % 3600) / 60)
+                local seconds = math.floor(elapsedTime % 60)
+
+                fastRepTimeLabel.Text = string.format("Fast Rep Time: %dd %dh %dm %ds", days, hours, minutes, seconds)
+
+                table.insert(strengthHistory, {time = currentTime, value = currentStrength})
+                table.insert(durabilityHistory, {time = currentTime, value = currentDurability})
+
+                while #strengthHistory > 0 and currentTime - strengthHistory[1].time > calculationInterval do
+                    table.remove(strengthHistory, 1)
+                end
+                while #durabilityHistory > 0 and currentTime - durabilityHistory[1].time > calculationInterval do
+                    table.remove(durabilityHistory, 1)
+                end
+
+                if currentTime - lastCalcTime >= calculationInterval then
+                    lastCalcTime = currentTime
+
+                    if #strengthHistory >= 2 then
+                        local strengthDelta = strengthHistory[#strengthHistory].value - strengthHistory[1].value
+                        local strengthPerSecond = strengthDelta / calculationInterval
+                        local strengthPerHour = math.floor(strengthPerSecond * 3600)
+                        local strengthPerDay = math.floor(strengthPerSecond * 86400)
+
+                        projectedStrengthLabel.Text =
+                            "Strength Pace: " ..
+                            formatNumber(strengthPerHour) .. "/Hour | " .. formatNumber(strengthPerDay) .. "/Day"
+                    end
+
+                    if #durabilityHistory >= 2 then
+                        local durabilityDelta = durabilityHistory[#durabilityHistory].value - durabilityHistory[1].value
+                        local durabilityPerSecond = durabilityDelta / calculationInterval
+                        local durabilityPerHour = math.floor(durabilityPerSecond * 3600)
+                        local durabilityPerDay = math.floor(durabilityPerSecond * 86400)
+
+                        projectedDurabilityLabel.Text =
+                            "Durability Pace: " ..
+                            formatNumber(durabilityPerHour) .. "/Hour | " .. formatNumber(durabilityPerDay) .. "/Day"
+                    end
+                end
+            end
+
+            task.wait(0.05)
+        end
+    end
+)
+
+task.spawn(
+    function()
+        while wait(2) do
+            updateStats()
+        end
+    end
+)
+
+local statManagementFolder = PacksFolder:AddFolder("Stat Management")
+
+statManagementFolder:AddButton(
+    "Reset Session Stats",
+    function()
+        sessionStartStrength = player.leaderstats.Strength.Value
+        sessionStartDurability = player.Durability.Value
+        sessionStartKills = player.leaderstats.Kills.Value
+        sessionStartRebirths = player.leaderstats.Rebirths.Value
+        sessionStartBrawls = player.leaderstats.Brawls.Value
+        sessionStartAgility = player.Agility.Value
+        sessionStartTime = os.time()
+        hasStartedTracking = false
+        startTracking()
+    end
+)
+
+statManagementFolder:AddButton(
+    "Copy Stats To Clipboard",
+    function()
+        local statsText = "Muscle Legends Statistics:\\n\\n"
+
+        statsText = statsText .. "Current Stats:\\n"
+        statsText = statsText .. "Strength: " .. formatWithCommas(player.leaderstats.Strength.Value) .. "\\n"
+        statsText = statsText .. "Durability: " .. formatWithCommas(player.Durability.Value) .. "\\n"
+        statsText = statsText .. "Rebirths: " .. formatWithCommas(player.leaderstats.Rebirths.Value) .. "\\n"
+        statsText = statsText .. "Kills: " .. formatWithCommas(player.leaderstats.Kills.Value) .. "\\n"
+        statsText = statsText .. "Brawls: " .. formatWithCommas(player.leaderstats.Brawls.Value) .. "\\n"
+        statsText = statsText .. "Agility: " .. formatWithCommas(player.Agility.Value) .. "\\n\\n"
+
+        if hasStartedTracking then
+            local elapsedTime = os.time() - sessionStartTime
+            local strengthGain = player.leaderstats.Strength.Value - sessionStartStrength
+            local durabilityGain = player.Durability.Value - sessionStartDurability
+            local killsGain = player.leaderstats.Kills.Value - sessionStartKills
+            local rebirthsGain = player.leaderstats.Rebirths.Value - sessionStartRebirths
+            local brawlsGain = player.leaderstats.Brawls.Value - sessionStartBrawls
+            local agilityGain = player.Agility.Value - sessionStartAgility
+
+            statsText = statsText .. "Session Statistics:\\n"
+            statsText = statsText .. "Session Time: " .. formatTime(elapsedTime) .. "\\n"
+            statsText = statsText .. "Strength Gained: " .. formatWithCommas(strengthGain) .. "\\n"
+            statsText = statsText .. "Durability Gained: " .. formatWithCommas(durabilityGain) .. "\\n"
+            statsText = statsText .. "Rebirths Gained: " .. formatWithCommas(rebirthsGain) .. "\\n"
+            statsText = statsText .. "Kills Gained: " .. formatWithCommas(killsGain) .. "\\n"
+            statsText = statsText .. "Brawls Gained: " .. formatWithCommas(brawlsGain) .. "\\n"
+            statsText = statsText .. "Agility Gained: " .. formatWithCommas(agilityGain) .. "\\n"
+        end
+
+        setclipboard(statsText)
+    end
+)
+
+updateStats()
+library:Init()
 
 premiumFolder:AddLabel("---OP Anti Lag---")
 
