@@ -31,7 +31,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memej
 
 local window = library:AddWindow("KAISER PRIVATE V2 | Rework", {
     main_color = Color3.fromRGB(60, 60, 60),
-    min_size = Vector2.new(700, 700),
+    min_size = Vector2.new(650, 650),
     can_resize = true,
 })
 
@@ -203,7 +203,7 @@ local function autoRockFarm(rockName, toggleVar)
     end
 end
 
-local Rock = window:AddTab("Rock")
+local Rock = window:AddTab("Rocks")
 
 function gettool()
     for i, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
@@ -530,223 +530,6 @@ local teleportSwitch = rebirths:AddSwitch("Auto Teleport to Muscle King", functi
     end
 end, "Tp to Mk")
 
-local autoEquipToolsFolder = rebirths:AddFolder("Auto Equip Tools")
-
-autoEquipToolsFolder:AddButton("Gamepass AutoLift", function()
-    local gamepassFolder = game:GetService("ReplicatedStorage").gamepassIds
-    local player = game:GetService("Players").LocalPlayer
-    for _, gamepass in pairs(gamepassFolder:GetChildren()) do
-        local value = Instance.new("IntValue")
-        value.Name = gamepass.Name
-        value.Value = gamepass.Value
-        value.Parent = player.ownedGamepasses
-    end
-end, "Unlock AutoLift Passe")
-
-autoEquipToolsFolder:AddSwitch("Auto Weight", function(Value)
-    _G.AutoWeight = Value
-    
-    if Value then
-        local weightTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Weight")
-        if weightTool then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(weightTool)
-        end
-    else
-        local character = game.Players.LocalPlayer.Character
-        local equipped = character:FindFirstChild("Weight")
-        if equipped then
-            equipped.Parent = game.Players.LocalPlayer.Backpack
-        end
-    end
-    
-    task.spawn(function()
-        while _G.AutoWeight do
-            if not _G.AutoWeight then break end
-            game:GetService("Players").LocalPlayer.muscleEvent:FireServer("rep")
-            task.wait(0.1)
-        end
-    end)
-end, "Auto Weight")
-
-autoEquipToolsFolder:AddSwitch("Auto Pushups", function(Value)
-    _G.AutoPushups = Value
-    
-    if Value then
-        local pushupsTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Pushups")
-        if pushupsTool then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(pushupsTool)
-        end
-    else
-        local character = game.Players.LocalPlayer.Character
-        local equipped = character:FindFirstChild("Pushups")
-        if equipped then
-            equipped.Parent = game.Players.LocalPlayer.Backpack
-        end
-    end
-    
-    task.spawn(function()
-        while _G.AutoPushups do
-            if not _G.AutoPushups then break end
-            game:GetService("Players").LocalPlayer.muscleEvent:FireServer("rep")
-            task.wait(0.1)
-        end
-    end)
-end, "Auto Pushups")
-
-autoEquipToolsFolder:AddSwitch("Auto Handstands", function(Value)
-    _G.AutoHandstands = Value
-    
-    if Value then
-        local handstandsTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Handstands")
-        if handstandsTool then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(handstandsTool)
-        end
-    else
-        local character = game.Players.LocalPlayer.Character
-        local equipped = character:FindFirstChild("Handstands")
-        if equipped then
-            equipped.Parent = game.Players.LocalPlayer.Backpack
-        end
-    end
-    
-    task.spawn(function()
-        while _G.AutoHandstands do
-            if not _G.AutoHandstands then break end
-            game:GetService("Players").LocalPlayer.muscleEvent:FireServer("rep")
-            task.wait(0.1)
-        end
-    end)
-end, "Auto Handstands")
-
-autoEquipToolsFolder:AddSwitch("Auto Situps", function(Value)
-    _G.AutoSitups = Value
-    
-    if Value then
-        local situpsTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Situps")
-        if situpsTool then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(situpsTool)
-        end
-    else
-        local character = game.Players.LocalPlayer.Character
-        local equipped = character:FindFirstChild("Situps")
-        if equipped then
-            equipped.Parent = game.Players.LocalPlayer.Backpack
-        end
-    end
-    
-    task.spawn(function()
-        while _G.AutoSitups do
-            if not _G.AutoSitups then break end
-            game:GetService("Players").LocalPlayer.muscleEvent:FireServer("rep")
-            task.wait(0.1)
-        end
-    end)
-end, "Auto Abdominals")
-
-autoEquipToolsFolder:AddSwitch("Auto Punch", function(Value)
-    _G.fastHitActive = Value
-    
-    if Value then
-        task.spawn(function()
-            while _G.fastHitActive do
-                if not _G.fastHitActive then break end
-                
-                local player = game.Players.LocalPlayer
-                local punch = player.Backpack:FindFirstChild("Punch")
-                if punch then
-                    punch.Parent = player.Character
-                    if punch:FindFirstChild("attackTime") then
-                        punch.attackTime.Value = 0
-                    end
-                end
-                task.wait(0.1)
-            end
-        end)
-        
-        task.spawn(function()
-            while _G.fastHitActive do
-                if not _G.fastHitActive then break end
-                
-                local player = game.Players.LocalPlayer
-                player.muscleEvent:FireServer("punch", "rightHand")
-                player.muscleEvent:FireServer("punch", "leftHand")
-                
-                local character = player.Character
-                if character then
-                    local punchTool = character:FindFirstChild("Punch")
-                    if punchTool then
-                        punchTool:Activate()
-                    end
-                end
-                task.wait(0)
-            end
-        end)
-    else
-        local character = game.Players.LocalPlayer.Character
-        local equipped = character:FindFirstChild("Punch")
-        if equipped then
-            equipped.Parent = game.Players.LocalPlayer.Backpack
-        end
-    end
-end, "Auto Punch")
-
-autoEquipToolsFolder:AddSwitch("Fast Tools", function(Value)
-    _G.FastTools = Value
-    
-    local defaultSpeeds = {
-        {
-            "Punch",
-            "attackTime",
-            Value and 0 or 0.35
-        },
-        {
-            "Ground Slam",
-            "attackTime",
-            Value and 0 or 6
-        },
-        {
-            "Stomp",
-            "attackTime",
-            Value and 0 or 7
-        },
-        {
-            "Handstands",
-            "repTime",
-            Value and 0 or 1
-        },
-        {
-            "Pushups",
-            "repTime",
-            Value and 0 or 1
-        },
-        {
-            "Weight",
-            "repTime",
-            Value and 0 or 1
-        },
-        {
-            "Situps",
-            "repTime",
-            Value and 0 or 1
-        }
-    }
-    
-    local player = game.Players.LocalPlayer
-    local backpack = player:WaitForChild("Backpack")
-    
-    for _, toolInfo in ipairs(defaultSpeeds) do
-        local tool = backpack:FindFirstChild(toolInfo[1])
-        if tool and tool:FindFirstChild(toolInfo[2]) then
-            tool[toolInfo[2]].Value = toolInfo[3]
-        end
-        
-        local equippedTool = player.Character and player.Character:FindFirstChild(toolInfo[1])
-        if equippedTool and equippedTool:FindFirstChild(toolInfo[2]) then
-            equippedTool[toolInfo[2]].Value = toolInfo[3]
-        end
-    end
-end, "Speed up all tools")
-
 local sessionStartTime = os.time()
 local sessionStartStrength = 0
 local sessionStartDurability = 0
@@ -760,7 +543,7 @@ local AutoFarm = window:AddTab("Farm++")
 getgenv()._AutoRepFarmEnabled = false  
 
 -- Switch en la librería
-AutoFarm:AddSwitch("Strength Op (Use it if your minimum ping is 250 ms)", function(state)
+AutoFarm:AddSwitch("Strength Op (Use 250 ms)", function(state)
     getgenv()._AutoRepFarmEnabled = state
     warn("[Auto Rep Farm] Estado cambiado a:", state and "ON" or "OFF")
 end)
@@ -887,7 +670,7 @@ end)
 getgenv()._AutoRepFarmEnabled = false  
 
 -- Switch en la librería
-AutoFarm:AddSwitch("Strength Op (Use it if your minimum ping is less than 150 ms)", function(state)
+AutoFarm:AddSwitch("Strength Op (Use 150 ms)", function(state)
     getgenv()._AutoRepFarmEnabled = state
     warn("[Auto Rep Farm] Estado cambiado a:", state and "ON" or "OFF")
 end)
@@ -1010,53 +793,7 @@ task.spawn(function()
         task.wait(REP_DELAY)
     end
 end)
--- ✅ Auto comer huevos (modo alterno)
-local autoEatEnabled = false
 
-local function eatProteinEgg()
-    local player = game.Players.LocalPlayer
-    local backpack = player:WaitForChild("Backpack")
-    local character = player.Character or player.CharacterAdded:Wait()
-
-    local egg = backpack:FindFirstChild("Protein Egg")
-    if egg then
-        egg.Parent = character
-        pcall(function()
-            egg:Activate()
-        end)
-    end
-end
-
-task.spawn(function()
-    while true do
-        if autoEatEnabled then
-            eatProteinEgg()
-            task.wait(1800)
-        else
-            task.wait(1)
-        end
-    end
-end)
-
-AutoFarm:AddSwitch("Auto Eat Egg 30 Minuts", function(state)
-    autoEatEnabled = state
-end)
-
-
-    AutoFarm:AddSwitch("Spin Fortune Wheel", function(state)
-    _G.AutoSpinWheel = state
-
-    if state then
-        spawn(function()
-            while _G.AutoSpinWheel and task.wait(0.1) do
-                game:GetService("ReplicatedStorage").rEvents.openFortuneWheelRemote:InvokeServer(
-                    "openFortuneWheel",
-                    game:GetService("ReplicatedStorage").fortuneWheelChances["Fortune Wheel"]
-                )
-            end
-        end)
-    end
-end)
 -- ✅ Optimización visual
 AutoFarm:AddSwitch("Hide All Frames", function(bool)
     local rSto = game:GetService("ReplicatedStorage")
@@ -1251,7 +988,7 @@ AutoFarm:AddButton("Jungle lift", function()
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
 end)
 
-AutoFarm:AddLabel("Rebiths Gained").TextSize = 23
+AutoFarm:AddLabel("Rebiths Folder").TextSize = 25
 
 
 local fastStrengthFolder = AutoFarm:AddFolder("Fast Rebirths Functions")
@@ -1993,7 +1730,7 @@ local showKillsButton = Killer:AddButton("Kill Counter UI", function()
 			titleLabel.Size = UDim2.new(1, 0, 0, 20)
 			titleLabel.Position = UDim2.new(0, 0, 0, 0)
 			titleLabel.BackgroundTransparency = 1
-			titleLabel.Text = "KAISER V2 KILLER"
+			titleLabel.Text = "Kaiser Killer"
 			titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 			titleLabel.Font = Enum.Font.SourceSansBold
 			titleLabel.TextScaled = true
@@ -2136,7 +1873,7 @@ pets:AddSwitch("Auto Open Aura", function(bool)
     end
 end)
 
-local LookDura = window:AddTab("LookDura")
+local LookDura = window:AddTab("Stats")
 
 local SelectPlayerName = ""
 
