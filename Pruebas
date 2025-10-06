@@ -12,7 +12,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Coron
 
 local window = library:AddWindow(title, {
     main_color = Color3.fromRGB(75, 0, 130),
-    min_size = Vector2.new(500, 500),
+    min_size = Vector2.new(600, 800),
     can_resize = true,
 })
 
@@ -2864,7 +2864,10 @@ print("Calculator extendido - Todas las estadísticas disponibles")
 local Killer = window:AddTab("Killer")
 
 -- Corregir variable: cambiar de 'Killing' a 'Killer'
-killer:AddLabel("Galaxy XVI On Top").TextSize = 24
+local titleLabel = Killer:AddLabel("Kill Aura")
+titleLabel.TextSize = 24
+titleLabel.Font = Enum.Font.Merriweather 
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 -- Corregir variable: cambiar de 'Killing' a 'Killer'
 local dropdown =
@@ -3868,6 +3871,19 @@ extraTab:AddSwitch("Auto Ground Slam", function(state)
             end
         end)
     end
+end)
+
+extraTab:AddButton("Empty", function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    humanoidRootPart.CFrame = CFrame.new(-241.12, -369.25, -396.96)
+    
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Teletransporte",
+        Text = "Teleported to Coordenadas (-241, -369, -396)",
+        Duration = 3
+    })
 end)
 
 extraTab:AddLabel("")
