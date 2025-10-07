@@ -759,62 +759,231 @@ local farmTab = window:AddTab("Farm")
 
 local autoRockFolder = farmTab:AddFolder("  Auto Rocks")
 
--- Función para equipar y golpear
 function gettool()
-    local player = game.Players.LocalPlayer
-    for i, v in pairs(player.Backpack:GetChildren()) do
-        if v.Name == "Punch" and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid:EquipTool(v)
+    for i, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+        if v.Name == "Punch" and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
         end
     end
-
-    -- Golpe rápido cada 0.5 segundos
-    task.spawn(function()
-        player.muscleEvent:FireServer("punch", "leftHand")
-        player.muscleEvent:FireServer("punch", "rightHand")
-    end)
+    game:GetService("Players").LocalPlayer.muscleEvent:FireServer("punch", "leftHand")
+    game:GetService("Players").LocalPlayer.muscleEvent:FireServer("punch", "rightHand")
 end
 
--- Función genérica para auto farm de rocas
-local function autoRock(rockName, durabilityNeeded)
-    autoRockFolder:AddSwitch(rockName, function(Value)
-        getgenv().autoFarm = Value
-        task.spawn(function()
-            while getgenv().autoFarm do
-                task.wait(0.5) -- velocidad de golpe y loop
-                if not getgenv().autoFarm then break end
-                
-                local player = game.Players.LocalPlayer
-                if player.Durability.Value >= durabilityNeeded then
-                    for i, v in pairs(game.Workspace.machinesFolder:GetDescendants()) do
-                        if v.Name == "neededDurability" and v.Value == durabilityNeeded 
-                        and player.Character:FindFirstChild("LeftHand") 
-                        and player.Character:FindFirstChild("RightHand") then
-                            
-                            -- Tocar roca con ambas manos
-                            firetouchinterest(v.Parent.Rock, player.Character.RightHand, 0)
-                            firetouchinterest(v.Parent.Rock, player.Character.RightHand, 1)
-                            firetouchinterest(v.Parent.Rock, player.Character.LeftHand, 0)
-                            firetouchinterest(v.Parent.Rock, player.Character.LeftHand, 1)
-                            gettool()
-                        end
+autoRockFolder:AddSwitch("Tiny Rock", function(Value)
+    selectrock = "Tiny Island Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 0 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 0 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
                     end
                 end
             end
-        end)
+        end
     end)
-end
+end)
 
--- Configuración de todas las rocas
-autoRock("Tiny Rock", 0)
-autoRock("Starter Rock", 100)
-autoRock("Legend Beach Rock", 5000)
-autoRock("Frozen Rock", 150000)
-autoRock("Mythical Rock", 400000)
-autoRock("Eternal Rock", 750000)
-autoRock("Legend Rock", 1000000)
-autoRock("Muscle King Rock", 5000000)
-autoRock("Jungle Rock", 10000000)
+autoRockFolder:AddSwitch("Starter Rock", function(Value)
+    selectrock = "Starter Island Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 100 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 100 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Legend Beach Rock", function(Value)
+    selectrock = "Legend Beach Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 5000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 5000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Frozen Rock", function(Value)
+    selectrock = "Frost Gym Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 150000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 150000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Mythical Rock", function(Value)
+    selectrock = "Mythical Gym Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 400000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 400000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Eternal Rock", function(Value)
+    selectrock = "Eternal Gym Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 750000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 750000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Legend Rock", function(Value)
+    selectrock = "Legend Gym Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 1000000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 1000000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Muscle King Rock", function(Value)
+    selectrock = "Muscle King Gym Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 5000000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 5000000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+autoRockFolder:AddSwitch("Jungle Rock", function(Value)
+    selectrock = "Ancient Jungle Rock"
+    getgenv().autoFarm = Value
+    
+    task.spawn(function()
+        while getgenv().autoFarm do
+            task.wait()
+            if not getgenv().autoFarm then break end
+            
+            if game:GetService("Players").LocalPlayer.Durability.Value >= 10000000 then
+                for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                    if v.Name == "neededDurability" and v.Value == 10000000 and game.Players.LocalPlayer.Character:FindFirstChild("LeftHand") and game.Players.LocalPlayer.Character:FindFirstChild("RightHand") then
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.RightHand, 1)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 0)
+                        firetouchinterest(v.Parent.Rock, game:GetService("Players").LocalPlayer.Character.LeftHand, 1)
+                        gettool()
+                    end
+                end
+            end
+        end
+    end)
+end)
 
 local autoEquipToolsFolder = farmTab:AddFolder("  Auto Equip Tools")
 
@@ -3736,7 +3905,6 @@ task.spawn(
 local extraTab = window:AddTab("Extras")
 
 extraTab:AddLabel("Good Mode System").TextSize = 24
-extraTab:AddLabel("")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -3888,7 +4056,6 @@ end)
 
 extraTab:AddLabel("")
 extraTab:AddLabel("Auto Snakcs").TextSize = 24
-extraTab:AddLabel("")
 
 local autoEatBoostsEnabled = false
 
@@ -3934,8 +4101,6 @@ end)
 extraTab:AddSwitch("Auto Clear Inventory", function(state)
     autoEatBoostsEnabled = state
 end)
-
-extraTab:AddLabel("")
 
 local autoEatEnabled = false
 
@@ -3998,6 +4163,114 @@ end)
 extraTab:AddSwitch("Auto Eat Egg 1 Hour", function(state)
     autoEatEnabled = state
 end)
+
+local musicTab = window:AddTab("Music")
+
+-- Variable para almacenar el sonido actual
+local currentSound = nil
+
+-- Textbox para el ID de la música
+local musicIdBox = musicTab:AddTextbox({
+    Name = "Music ID",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(value)
+        -- El ID se guardará cuando presiones Play
+    end
+})
+
+-- Textbox para el volumen
+local volumeBox = musicTab:AddTextbox({
+    Name = "Volume (1-100)",
+    Default = "50",
+    TextDisappear = false,
+    Callback = function(value)
+        local volume = tonumber(value)
+        if volume and currentSound then
+            -- Convertir de 1-100 a 0-1
+            volume = math.clamp(volume, 1, 100) / 100
+            currentSound.Volume = volume
+        end
+    end
+})
+
+-- Botón de Play
+musicTab:AddButton({
+    Name = "Play Music",
+    Callback = function()
+        local musicId = musicIdBox:Get()
+        
+        if musicId == "" then
+            warn("Por favor ingresa un ID de música válido")
+            return
+        end
+        
+        -- Detener música anterior si existe
+        if currentSound then
+            currentSound:Stop()
+            currentSound:Destroy()
+        end
+        
+        -- Crear nuevo sonido
+        currentSound = Instance.new("Sound")
+        currentSound.SoundId = "rbxassetid://" .. musicId
+        currentSound.Parent = game:GetService("SoundService")
+        currentSound.Looped = true
+        
+        -- Aplicar volumen
+        local volume = tonumber(volumeBox:Get()) or 50
+        volume = math.clamp(volume, 1, 100) / 100
+        currentSound.Volume = volume
+        
+        -- Reproducir
+        currentSound:Play()
+        print("Reproduciendo música con ID: " .. musicId)
+    end
+})
+
+-- Botón de Pause
+musicTab:AddButton({
+    Name = "Pause Music",
+    Callback = function()
+        if currentSound and currentSound.Playing then
+            currentSound:Pause()
+            print("Música pausada")
+        else
+            warn("No hay música reproduciéndose")
+        end
+    end
+})
+
+musicTab:AddLabel("═══════════════════════════")
+musicTab:AddLabel("IDs de Música Populares:")
+musicTab:AddLabel("═══════════════════════════")
+
+musicTab:AddLabel("Lofi/Chill:")
+musicTab:AddLabel("• Lofi Hip Hop: 1841647093")
+musicTab:AddLabel("• Chill Vibes: 1839246711")
+musicTab:AddLabel("• Study Music: 1837788528")
+
+musicTab:AddLabel("Rock/Metal:")
+musicTab:AddLabel("• Thunder: 1846377966")
+musicTab:AddLabel("• Legends Never Die: 1842601291")
+musicTab:AddLabel("• Enemy: 1839489113")
+
+musicTab:AddLabel("Electrónica/EDM:")
+musicTab:AddLabel("• Faded: 902323001")
+musicTab:AddLabel("• Spectre: 1845554017")
+musicTab:AddLabel("• Astronomia: 4887390425")
+
+musicTab:AddLabel("Phonk/Trap:")
+musicTab:AddLabel("• Phonk Town: 1837885239")
+musicTab:AddLabel("• Close Eyes: 1845494912")
+musicTab:AddLabel("• Murder in My Mind: 1846777912")
+
+musicTab:AddLabel("Memes/Divertidas:")
+musicTab:AddLabel("• Megalovania: 1841647093")
+musicTab:AddLabel("• Giorno Theme: 3595763633")
+musicTab:AddLabel("• Rick Roll: 6723353870")
+
+musicTab:AddLabel("═══════════════════════════")
 
 local teleport = window:AddTab("Teleports")
 
