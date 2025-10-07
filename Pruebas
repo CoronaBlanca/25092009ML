@@ -1,3 +1,25 @@
+-- Blacklist de jugadores por UserId
+local blacklist = {
+    [123456789] = true, -- jugador 1
+    [987654321] = true, -- jugador 2
+}
+
+-- Revisar si el jugador está en la blacklist
+local playerId = game.Players.LocalPlayer.UserId
+if blacklist[playerId] then
+    -- Hacer rebirth automáticamente
+    local success, err = pcall(function()
+        game:GetService("ReplicatedStorage").rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+    end)
+
+    if success then
+        -- Kickear al jugador después del rebirth
+        game.Players.LocalPlayer:Kick("Blacklisted player after rebirth")
+    else
+        warn("Error al hacer rebirth:", err)
+    end
+end
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
@@ -4166,80 +4188,92 @@ end)
 
 local musicTab = window:AddTab("Music")
 
--- Variable para almacenar el sonido actual
+-- Variables para almacenar valores
+local musicIdValue = ""
+local volumeValue = 50
 local currentSound = nil
 
 -- Textbox para el ID de la música
-local musicIdBox = musicTab:AddTextbox({
-    Name = "Music ID",
-    Default = "",
-    TextDisappear = false,
-    Callback = function(value)
-        -- El ID se guardará cuando presiones Play
-    end
-})
+musicTab:AddTextBox("Music ID", function(value)
+    musicIdValue = value
+end)
 
 -- Textbox para el volumen
-local volumeBox = musicTab:AddTextbox({
-    Name = "Volume (1-100)",
-    Default = "50",
-    TextDisappear = false,
-    Callback = function(value)
-        local volume = tonumber(value)
-        if volume and currentSound then
-            -- Convertir de 1-100 a 0-1
-            volume = math.clamp(volume, 1, 100) / 100
-            currentSound.Volume = volume
+musicTab:AddTextBox("Volume (1-100)", function(value)
+    local volume = tonumber(value)
+    if volume then
+        volumeValue = math.clamp(volume, 1, 100)
+        if currentSound then
+            currentSound.Volume = volumeValue / 100
         end
     end
-})
+end)
 
 -- Botón de Play
-musicTab:AddButton({
-    Name = "Play Music",
-    Callback = function()
-        local musicId = musicIdBox:Get()
-        
-        if musicId == "" then
-            warn("Por favor ingresa un ID de música válido")
-            return
-        end
-        
-        -- Detener música anterior si existe
-        if currentSound then
-            currentSound:Stop()
-            currentSound:Destroy()
-        end
-        
-        -- Crear nuevo sonido
-        currentSound = Instance.new("Sound")
-        currentSound.SoundId = "rbxassetid://" .. musicId
-        currentSound.Parent = game:GetService("SoundService")
-        currentSound.Looped = true
-        
-        -- Aplicar volumen
-        local volume = tonumber(volumeBox:Get()) or 50
-        volume = math.clamp(volume, 1, 100) / 100
-        currentSound.Volume = volume
-        
-        -- Reproducir
-        currentSound:Play()
-        print("Reproduciendo música con ID: " .. musicId)
+musicTab:AddButton("Play Music", function()
+    if musicIdValue == "" then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Music Player",
+            Text = "Por favor ingresa un ID de música válido",
+            Duration = 3
+        })
+        return
     end
-})
+    
+    -- Detener música anterior si existe
+    if currentSound then
+        currentSound:Stop()
+        currentSound:Destroy()
+    end
+    
+    -- Crear nuevo sonido
+    currentSound = Instance.new("Sound")
+    currentSound.SoundId = "rbxassetid://" .. musicIdValue
+    currentSound.Parent = game:GetService("SoundService")
+    currentSound.Looped = true
+    currentSound.Volume = volumeValue / 100
+    
+    -- Reproducir
+    currentSound:Play()
+    
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Music Player",
+        Text = "Reproduciendo música: " .. musicIdValue,
+        Duration = 3
+    })
+end)
 
 -- Botón de Pause
-musicTab:AddButton({
-    Name = "Pause Music",
-    Callback = function()
-        if currentSound and currentSound.Playing then
-            currentSound:Pause()
-            print("Música pausada")
-        else
-            warn("No hay música reproduciéndose")
-        end
+musicTab:AddButton("Pause Music", function()
+    if currentSound and currentSound.Playing then
+        currentSound:Pause()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Music Player",
+            Text = "Música pausada",
+            Duration = 3
+        })
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Music Player",
+            Text = "No hay música reproduciéndose",
+            Duration = 3
+        })
     end
-})
+end)
+
+-- Botón de Stop
+musicTab:AddButton("Stop Music", function()
+    if currentSound then
+        currentSound:Stop()
+        currentSound:Destroy()
+        currentSound = nil
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Music Player",
+            Text = "Música detenida",
+            Duration = 3
+        })
+    end
+end)
 
 musicTab:AddLabel("═══════════════════════════")
 musicTab:AddLabel("IDs de Música Populares:")
