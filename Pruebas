@@ -25,7 +25,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Coron
 
 local window = library:AddWindow(title, {
     main_color = Color3.fromRGB(75, 0, 130),
-    min_size = Vector2.new(100, 500),
+    min_size = Vector2.new(550, 500),
     can_resize = true,
 })
 
@@ -513,6 +513,8 @@ local miscTab = window:AddTab("Misc")
 
 miscTab:AddLabel("Misc").TextSize  = 24
 
+miscTab:AddLabel("-----{Speed}-----")
+
 -- Variable global para la velocidad
 local player = game.Players.LocalPlayer
 local speedValue = 16
@@ -538,8 +540,6 @@ local function applyConstantSpeed()
         task.wait(0.1) -- Ajusta este valor si quieres que se actualice más rápido o más lento
     end
 end
-
-miscTab:AddLabel("-----{Speed}-----")
 
 -- Switch principal
 local autoSpeedSwitch = miscTab:AddSwitch("Auto Set Speed", function(bool)
