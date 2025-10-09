@@ -25,7 +25,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Coron
 
 local window = library:AddWindow(title, {
     main_color = Color3.fromRGB(75, 0, 130),
-    min_size = Vector2.new(550, 500),
+    min_size = Vector2.new(500, 500),
     can_resize = true,
 })
 
@@ -220,17 +220,6 @@ local switch = mainTab:AddSwitch("Lock Position", function(Value)
         if getgenv().posLock then
             getgenv().posLock:Disconnect()
             getgenv().posLock = nil
-        end
-    end
-end)
-
-mainTab:AddSwitch("Delete All Frames", function(state)
-    local rSto = game:GetService("ReplicatedStorage")
-    for _, obj in pairs(rSto:GetChildren()) do
-        if obj.Name:match("Frame$") and obj:IsA("GuiObject") then
-            if state then
-                obj:Destroy()
-            end
         end
     end
 end)
@@ -668,18 +657,20 @@ end)
 
 local killerTab = window:AddTab("Killer")
 
+killerTab:AddLabel("Killer").TextSize = 24
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
-local rootOffset = CFrame.new(0, 0, 2) -- Qué tan cerca se traen los jugadores
+local rootOffset = CFrame.new(0, 0, 2) -- distancia a la que se traen los jugadores
 
 -- Funciones base
-local function getToolFromBackpackOrCharacter(name)
+local function getTool(name)
     local backpack = localPlayer:FindFirstChild("Backpack")
     local char = localPlayer.Character
     if char then
-        local inChar = char:FindFirstChild(name)
-        if inChar then return inChar end
+        local tool = char:FindFirstChild(name)
+        if tool then return tool end
     end
     if backpack then
         return backpack:FindFirstChild(name)
@@ -699,66 +690,85 @@ local function equipTool(tool)
 end
 
 local function activateTool(tool)
-    if not tool then return end
-    pcall(function()
-        tool:Activate()
-    end)
+    if tool then
+        pcall(function()
+            tool:Activate()
+        end)
+    end
 end
 
-local function bringPlayerNear(plr)
-    if not plr.Character then return false end
+local function teleportToPlayer(plr)
+    if not plr.Character then return end
     local hrp = plr.Character:FindFirstChild("HumanoidRootPart") or plr.Character:FindFirstChild("Torso")
     local myHRP = localPlayer.Character and (localPlayer.Character:FindFirstChild("HumanoidRootPart") or localPlayer.Character:FindFirstChild("Torso"))
-    if not hrp or not myHRP then return false end
+    if not hrp or not myHRP then return end
     pcall(function()
         hrp.CFrame = myHRP.CFrame * rootOffset
     end)
 end
 
--- Función para crear switches directamente dentro de killerTab
-local function createKillSwitch(tab, switchName, toolName)
-    local connectionName = ("_killConn_%s"):format(toolName:gsub("%s", ""))
-    tab:AddSwitch(switchName, function(on)
-        _G[connectionName] = _G[connectionName] or nil
+-- Función para crear un switch para cada herramienta
+local function createAutoKillSwitch(tab, switchName, toolName)
+    local connName = "_autoKill_" .. toolName:gsub("%s","")
+    _G[connName] = _G[connName] or nil
 
-        if on then
-            local tool = getToolFromBackpackOrCharacter(toolName)
-            if tool then equipTool(tool) end
+    tab:AddSwitch(switchName, function(state)
+        _G[connName .. "_enabled"] = state
 
-            if _G[connectionName] then return end
+        if state then
+            -- Reconectar al respawnear
+            if _G[connName .. "_connection"] then
+                _G[connName .. "_connection"]:Disconnect()
+                _G[connName .. "_connection"] = nil
+            end
 
-            _G[connectionName] = RunService.Heartbeat:Connect(function()
-                if not _G[connectionName] then return end
-                for _, plr in ipairs(Players:GetPlayers()) do
-                    if plr ~= localPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
-                        pcall(function()
-                            bringPlayerNear(plr)
-                            local curTool = getToolFromBackpackOrCharacter(toolName)
-                            if curTool then
-                                equipTool(curTool)
-                                activateTool(curTool)
-                                task.wait(0.05)
-                                activateTool(curTool)
+            _G[connName .. "_connection"] = localPlayer.CharacterAdded:Connect(function(character)
+                task.wait(1) -- esperar que humanoid y mochila carguen
+                local tool = getTool(toolName)
+                if tool then equipTool(tool) end
+            end)
+
+            -- Loop principal
+            _G[connName .. "_loop"] = task.spawn(function()
+                while _G[connName .. "_enabled"] do
+                    if not localPlayer.Character or not localPlayer.Character:FindFirstChild("Humanoid") then
+                        task.wait(0.5)
+                    else
+                        for _, plr in ipairs(Players:GetPlayers()) do
+                            if plr ~= localPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+                                teleportToPlayer(plr)
+                                local tool = getTool(toolName)
+                                if tool then
+                                    equipTool(tool)
+                                    activateTool(tool)
+                                    task.wait(0.05)
+                                    activateTool(tool)
+                                end
                             end
-                        end)
+                        end
                     end
+                    task.wait(0.1)
                 end
             end)
         else
-            if _G[connectionName] then
-                _G[connectionName]:Disconnect()
-                _G[connectionName] = nil
+            -- Desconectar todo
+            if _G[connName .. "_connection"] then
+                _G[connName .. "_connection"]:Disconnect()
+                _G[connName .. "_connection"] = nil
             end
+            _G[connName .. "_enabled"] = false
         end
     end)
 end
 
--- 🔥 Crear los 3 switches en killerTab
-createKillSwitch(killerTab, "Auto Kill (Punch)", "Punch")
-createKillSwitch(killerTab, "Auto Kill (Demon)", "Demon")
-createKillSwitch(killerTab, "Auto Kill (Stomp)", "Stomp")
+-- Crear los 3 switches separados en killerTab
+createAutoKillSwitch(killerTab, "Auto Kill (Punch)")
+createAutoKillSwitch(killerTab, "Auto Kill (Demon Sword)")
+createAutoKillSwitch(killerTab, "Auto Kill (Stomp)")
 
 local playersTab = window:AddTab("Players")
+
+player:AddLabel("Teleport").TextSize = 24
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -781,10 +791,19 @@ local function followPlayer(targetPlayer)
     end
 end
 
--- 📌 Dropdown dinámico de jugadores
+-- 📌 Función para actualizar dropdown dinámicamente
+local function updateDropdown(dropdown)
+    dropdown:Clear()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            dropdown:Add(plr.DisplayName)
+        end
+    end
+end
+
+-- 📌 Dropdown de jugadores
 local followDropdown = playersTab:AddDropdown("Teleport player", function(selectedDisplayName)
     if selectedDisplayName and selectedDisplayName ~= "" then
-        -- Buscar jugador por DisplayName
         local target = nil
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr.DisplayName == selectedDisplayName then
@@ -797,41 +816,25 @@ local followDropdown = playersTab:AddDropdown("Teleport player", function(select
             followTarget = target.Name -- Guardamos Name real para seguir
             following = true
             print("✅ Started following:", target.Name)
-
-            -- TP inmediato
             followPlayer(target)
         end
     end
 end)
 
--- 📌 Inicializar lista con DisplayNames
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        followDropdown:Add(player.DisplayName)
-    end
-end
+updateDropdown(followDropdown)
 
--- 📌 Actualizar lista cuando entren jugadores
+-- 📌 Actualizar dropdown cuando entren o salgan jugadores
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         followDropdown:Add(player.DisplayName)
     end
 end)
 
--- 📌 Actualizar lista cuando se vayan jugadores
 Players.PlayerRemoving:Connect(function(player)
-    -- Limpiamos y agregamos de nuevo
-    followDropdown:Clear()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            followDropdown:Add(plr.DisplayName)
-        end
-    end
-
-    -- Dejar de seguir si se fue
+    updateDropdown(followDropdown)
     if followTarget == player.Name then
-        followTarget = nil
         following = false
+        followTarget = nil
     end
 end)
 
@@ -859,7 +862,7 @@ end)
 
 -- 📌 Reintentar cuando respawnees
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
+    task.wait(1) -- esperar que cargue humanoid
     if following and followTarget then
         local target = Players:FindFirstChild(followTarget)
         if target then
