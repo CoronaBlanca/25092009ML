@@ -1,70 +1,182 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/memejames/elerium-v2-ui-library/main/Library", true))()
+-- Blacklist de jugadores por UserId
+local blacklist = {
+    [0000000000] = true, -- jugador 1
+    [0000000001] = true, -- jugador 2
+}
+
+-- Revisar si el jugador está en la blacklist
+local playerId = game.Players.LocalPlayer.UserId
+if blacklist[playerId] then
+    -- Kickear al jugador directamente
+    game.Players.LocalPlayer:Kick("Oh no you are on the blacklist")
+end
+
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 
-local window = library:AddWindow("Sherya Script", {
-    main_color = Color3.fromRGB(200, 0, 255),
-    min_size = Vector2.new(660, 660),
-    can_resize = false,
+local displayName = player.DisplayName
+if not displayName or displayName == "" then
+    displayName = player.Name
+end
+
+local title = ("Galaxy XVI | Welcome %s"):format(displayName)
+
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Xlxrxxm%20bx%20shxryx"))()
+
+local window = library:AddWindow(title, {
+    main_color = Color3.fromRGB(75, 0, 130),
+    min_size = Vector2.new(100, 500),
+    can_resize = true,
 })
 
 local mainTab = window:AddTab("Main")
-local miscTab = window:AddTab("Misc")
-local killerTab = window:AddTab("Killer")
-local playersTab = window:AddTab("Players")
-local creditsTab = window:AddTab("Credits")
 
-local autoPunch = false
+mainTab:AddLabel("Auto Tools").TextSize = 24
 
--- Función para equipar la herramienta "Punch"
-local function equipPunch()
-    local backpack = player:WaitForChild("Backpack")
-    local character = player.Character or player.CharacterAdded:Wait()
-    local tool = backpack:FindFirstChild("Punch") or character:FindFirstChild("Punch")
-    if tool and tool.Parent ~= character then
-        tool.Parent = character
-        task.wait(0.2)
+-- Auto Punch Toggle
+mainTab:AddSwitch("Auto Punch", function(Value)
+    _G.AutoPunch = Value
+    
+    if Value then
+        local punchTool = game.Players.LocalPlayer.Backpack:FindFirstChild("Punch")
+        if punchTool then
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(punchTool)
+        end
+    else
+        local character = game.Players.LocalPlayer.Character
+        local equipped = character:FindFirstChild("Punch")
+        if equipped then
+            equipped.Parent = game.Players.LocalPlayer.Backpack
+        end
     end
-end
-
--- Evento que detecta cuando el personaje reaparece para reequipo
-player.CharacterAdded:Connect(function()
-    if autoPunch then
-        task.wait(1) -- Espera que el personaje y mochila estén listos
-        equipPunch()
-    end
-end)
-
-mainTab:AddSwitch("Auto Punch", function(state)
-    autoPunch = state
-
-    if autoPunch then
-        equipPunch()
-    end
-
+    
     task.spawn(function()
-        while autoPunch do
-            pcall(function()
-                local character = player.Character or player.CharacterAdded:Wait()
-                local tool = character:FindFirstChild("Punch")
-
-                if tool then
-                    tool:Activate()
-                else
-                    -- Si no está equipada, intentar equipar
-                    equipPunch()
+        while _G.AutoPunch do
+            if not _G.AutoPunch then break end
+            local character = game.Players.LocalPlayer.Character
+            local punchTool = character and character:FindFirstChild("Punch")
+            
+            if punchTool then
+                punchTool:Activate()
+            else
+                local backpack = game.Players.LocalPlayer.Backpack
+                local newPunch = backpack:FindFirstChild("Punch")
+                if newPunch then
+                    game.Players.LocalPlayer.Character.Humanoid:EquipTool(newPunch)
                 end
-            end)
+            end
             task.wait(0.1)
         end
     end)
-end)
+end, "Golpea automáticamente con Punch")
 
-local autoOrb = false
-local orbGuiCreado = false
+-- Auto Demon Sword Toggle
+mainTab:AddSwitch("Auto Demon Sword", function(Value)
+    _G.AutoDemonSword = Value
+    
+    if Value then
+        local demonSword = game.Players.LocalPlayer.Backpack:FindFirstChild("Demon Sword")
+        if demonSword then
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(demonSword)
+        end
+    else
+        local character = game.Players.LocalPlayer.Character
+        local equipped = character:FindFirstChild("Demon Sword")
+        if equipped then
+            equipped.Parent = game.Players.LocalPlayer.Backpack
+        end
+    end
+    
+    task.spawn(function()
+        while _G.AutoDemonSword do
+            if not _G.AutoDemonSword then break end
+            local character = game.Players.LocalPlayer.Character
+            local demonSword = character and character:FindFirstChild("Demon Sword")
+            
+            if demonSword then
+                demonSword:Activate()
+            else
+                local backpack = game.Players.LocalPlayer.Backpack
+                local newSword = backpack:FindFirstChild("Demon Sword")
+                if newSword then
+                    game.Players.LocalPlayer.Character.Humanoid:EquipTool(newSword)
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end, "Golpea automáticamente con Demon Sword")
+
+-- Auto Punch + Demon Sword Toggle
+mainTab:AddSwitch("Auto Punch + Sword Demon", function(Value)
+    _G.AutoPunchSword = Value
+    
+    if Value then
+        local backpack = game.Players.LocalPlayer.Backpack
+        local tool = backpack:FindFirstChild("Punch") or backpack:FindFirstChild("Demon Sword")
+        if tool then
+            game.Players.LocalPlayer.Character.Humanoid:EquipTool(tool)
+        end
+    else
+        local character = game.Players.LocalPlayer.Character
+        local equipped = character:FindFirstChild("Punch") or character:FindFirstChild("Demon Sword")
+        if equipped then
+            equipped.Parent = game.Players.LocalPlayer.Backpack
+        end
+    end
+    
+    task.spawn(function()
+        while _G.AutoPunchSword do
+            if not _G.AutoPunchSword then break end
+            local character = game.Players.LocalPlayer.Character
+            local tool = character and (character:FindFirstChild("Punch") or character:FindFirstChild("Demon Sword"))
+            
+            if tool then
+                tool:Activate()
+            else
+                local backpack = game.Players.LocalPlayer.Backpack
+                local newTool = backpack:FindFirstChild("Punch") or backpack:FindFirstChild("Demon Sword")
+                if newTool then
+                    game.Players.LocalPlayer.Character.Humanoid:EquipTool(newTool)
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end, "Golpea automáticamente con Punch o Demon Sword")
+
+mainTab:AddSwitch("Fast Tools", function(Value)
+    _G.FastTools = Value
+
+    local player = game.Players.LocalPlayer
+    local backpack = player:WaitForChild("Backpack")
+
+    -- Lista de herramientas y sus propiedades de velocidad
+    local fastTools = {
+        { "Punch", "attackTime", Value and 0 or 0.35 },
+        { "Demon Sword", "attackTime", Value and 0 or 0.35 },
+        { "Weight", "repTime", Value and 0 or 1 },
+    }
+
+    -- Aplicar velocidad a las herramientas en mochila
+    for _, toolInfo in ipairs(fastTools) do
+        local toolName, property, speed = unpack(toolInfo)
+
+        local tool = backpack:FindFirstChild(toolName)
+        if tool and tool:FindFirstChild(property) then
+            tool[property].Value = speed
+        end
+
+        -- También aplicar a las herramientas equipadas
+        local equipped = player.Character and player.Character:FindFirstChild(toolName)
+        if equipped and equipped:FindFirstChild(property) then
+            equipped[property].Value = speed
+        end
+    end
+end, "Acelera Punch, Demon Sword y Weight")
+
+mainTab:AddLabel("")
+mainTab:AddLabel("Auto Orbes OP").TextSize = 24
 
 mainTab:AddSwitch("Auto Orb", function(state)
     autoOrb = state
@@ -91,78 +203,366 @@ mainTab:AddSwitch("Auto Orb", function(state)
     end)
 end)
 
-local autoDemonSword = false
+mainTab:AddLabel("")
+mainTab:AddLabel("OP Things/Farms").TextSize = 24
 
--- Función para equipar Demon Sword
-local function equipDemonSword()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local backpack = player:WaitForChild("Backpack")
-    local tool = backpack:FindFirstChild("Demon Sword") or character:FindFirstChild("Demon Sword")
-    if tool and tool.Parent ~= character then
-        tool.Parent = character
-        task.wait(0.2)
+local switch = mainTab:AddSwitch("Lock Position", function(Value)
+    if Value then
+        
+        local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+        getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
+            if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
+            end
+        end)
+    else
+        
+        if getgenv().posLock then
+            getgenv().posLock:Disconnect()
+            getgenv().posLock = nil
+        end
+    end
+end)
+
+mainTab:AddSwitch("Delete All Frames", function(state)
+    local rSto = game:GetService("ReplicatedStorage")
+    for _, obj in pairs(rSto:GetChildren()) do
+        if obj.Name:match("Frame$") and obj:IsA("GuiObject") then
+            if state then
+                obj:Destroy()
+            end
+        end
+    end
+end)
+
+-- 🌟 Anti-Lag Script (sin GUI)
+local antiLagActive = false
+
+-- 🧠 Función para optimizar el juego
+local function optimizeGame()
+    local Lighting = game:GetService("Lighting")
+    local Terrain = workspace:FindFirstChildOfClass("Terrain")
+
+    -- 🔧 Configuración de iluminación
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 999999
+    Lighting.Brightness = 1
+    Lighting.EnvironmentDiffuseScale = 0
+    Lighting.EnvironmentSpecularScale = 0
+    Lighting.Technology = Enum.Technology.Compatibility
+
+    --  Optimización del terreno (si existe)
+    if Terrain then
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterReflectance = 0
+        Terrain.WaterTransparency = 1
+    end
+
+    --  Optimización del workspace
+    workspace.StreamingEnabled = true
+    workspace.StreamingTargetRadius = 100
+    workspace.InterpolationThrottling = Enum.InterpolationThrottlingMode.Enabled
+
+    --  Configurar calidad de renderizado
+    settings().Rendering.QualityLevel = "Level01"
+
+    --  Desactivar decoraciones innecesarias
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
+            obj.Enabled = false
+        elseif obj:IsA("BasePart") and obj.Reflectance > 0 then
+            obj.Reflectance = 0
+        end
     end
 end
 
--- Reequipar Demon Sword al reaparecer si está activado el auto
-player.CharacterAdded:Connect(function()
-    if autoDemonSword then
-        task.wait(1)
-        equipDemonSword()
+--  Activador del Anti-Lag
+local function activateAntiLag()
+    if antiLagActive then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Sherya Script";
+            Text = "⚙️ Anti-Lag ya está activo.";
+            Duration = 4;
+        })
+        return
     end
+
+    antiLagActive = true
+    optimizeGame()
+
+    --  Notificación
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Sherya Script";
+        Text = "🚀 Anti-Lag activado con éxito!";
+        Duration = 5;
+    })
+
+    print("Anti-Lag activado correctamente")
+end
+
+--  Botón para activarlo (si tienes carpeta opThingsFolder)
+mainTab:AddButton("Anti-Lag", function()
+    activateAntiLag()
 end)
 
-mainTab:AddSwitch("Auto (Demon Sword)", function(state)
-    autoDemonSword = state
+--  Etiqueta informativa
+mainTab:AddLabel("Reduce lag y mejora el rendimiento")
 
-    if autoDemonSword then
-        equipDemonSword()
+-- Variables para el Anti AFK GUI
+local antiAFKActive = false
+local antiAFKConnection = nil
+local sessionStartTime = tick()
+local sheryaGUI = nil
+
+--  Función para crear la GUI de monitoreo (estilo minimalista)
+local function createSheryaGUI()
+    if sheryaGUI then
+        sheryaGUI:Destroy()
+        sheryaGUI = nil
+    end
+    
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local Stats = game:GetService("Stats")
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    -- ScreenGui
+    sheryaGUI = Instance.new("ScreenGui")
+    sheryaGUI.Name = "SheryaScript"
+    sheryaGUI.Parent = playerGui
+    sheryaGUI.ResetOnSpawn = false
+    sheryaGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    -- Frame principal (recto, con borde)
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Parent = sheryaGUI
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Gris oscuro
+    mainFrame.BorderSizePixel = 2
+    mainFrame.BorderColor3 = Color3.fromRGB(0, 0, 0) -- Borde negro
+    mainFrame.Position = UDim2.new(0, 15, 0, 15)
+    mainFrame.Size = UDim2.new(0, 200, 0, 100)
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+
+    --  Título
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "Title"
+    titleLabel.Parent = mainFrame
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Size = UDim2.new(1, 0, 0, 22)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Text = "Galaxy XVI"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextScaled = true
+    titleLabel.TextWrapped = true
+
+    -- Ping Label
+    local pingLabel = Instance.new("TextLabel")
+    pingLabel.Name = "Ping"
+    pingLabel.Parent = mainFrame
+    pingLabel.BackgroundTransparency = 1
+    pingLabel.Position = UDim2.new(0, 5, 0, 25)
+    pingLabel.Size = UDim2.new(1, -10, 0, 18)
+    pingLabel.Font = Enum.Font.Gotham
+    pingLabel.Text = "Ping: 0 ms"
+    pingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    pingLabel.TextScaled = true
+    pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- FPS Label
+    local fpsLabel = Instance.new("TextLabel")
+    fpsLabel.Name = "FPS"
+    fpsLabel.Parent = mainFrame
+    fpsLabel.BackgroundTransparency = 1
+    fpsLabel.Position = UDim2.new(0, 5, 0, 45)
+    fpsLabel.Size = UDim2.new(1, -10, 0, 18)
+    fpsLabel.Font = Enum.Font.Gotham
+    fpsLabel.Text = "FPS: 0"
+    fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    fpsLabel.TextScaled = true
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Session Time Label
+    local sessionLabel = Instance.new("TextLabel")
+    sessionLabel.Name = "SessionTime"
+    sessionLabel.Parent = mainFrame
+    sessionLabel.BackgroundTransparency = 1
+    sessionLabel.Position = UDim2.new(0, 5, 0, 65)
+    sessionLabel.Size = UDim2.new(1, -10, 0, 18)
+    sessionLabel.Font = Enum.Font.Gotham
+    sessionLabel.Text = "Session: 00:00:00"
+    sessionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    sessionLabel.TextScaled = true
+    sessionLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Status Label
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "Status"
+    statusLabel.Parent = mainFrame
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Position = UDim2.new(0, 5, 0, 83)
+    statusLabel.Size = UDim2.new(1, -10, 0, 18)
+    statusLabel.Font = Enum.Font.GothamBold
+    statusLabel.Text = "Anti-AFK Activo"
+    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    statusLabel.TextScaled = true
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- FPS y Ping actualizador
+    local frameCount, lastTime, currentFPS = 0, tick(), 0
+    local function formatTime(seconds)
+        local h = math.floor(seconds / 3600)
+        local m = math.floor((seconds % 3600) / 60)
+        local s = math.floor(seconds % 60)
+        return string.format("%02d:%02d:%02d", h, m, s)
     end
 
-    task.spawn(function()
-        while autoDemonSword do
-            pcall(function()
-                local character = player.Character or player.CharacterAdded:Wait()
-                local tool = character:FindFirstChild("Demon Sword")
-                if not tool then
-                    equipDemonSword()
-                    tool = character:FindFirstChild("Demon Sword")
-                end
-                if tool then
-                    tool:Activate()
-                end
-            end)
-            task.wait(0.15) -- velocidad de ataque
+    local function updateStats()
+        frameCount += 1
+        local now = tick()
+        if now - lastTime >= 1 then
+            currentFPS = frameCount
+            frameCount, lastTime = 0, now
+        end
+        local ping = math.round(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        local sessionTime = tick() - sessionStartTime
+        pingLabel.Text = "Ping: " .. ping .. " ms"
+        fpsLabel.Text = "FPS: " .. currentFPS
+        sessionLabel.Text = "Session: " .. formatTime(sessionTime)
+    end
+    RunService.Heartbeat:Connect(updateStats)
+
+    return sheryaGUI
+end
+
+--  Función para activar Anti-AFK
+local function startAntiAFK()
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+    end
+    
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    -- Movimiento micro para evitar AFK
+    antiAFKConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if humanoid and humanoid.Parent then
+            local t = tick()
+            local movement = math.sin(t * 0.1) * 0.01
+            humanoid:Move(Vector3.new(movement, 0, 0), false)
         end
     end)
-end)
+    
+    -- Optimizaciones básicas
+    local function optimizeGame()
+        local lighting = game:GetService("Lighting")
+        lighting.GlobalShadows = false
+        lighting.Technology = Enum.Technology.Compatibility
+        workspace.StreamingEnabled = true
+        workspace.StreamingTargetRadius = 100
+        settings().Rendering.QualityLevel = "Level01"
+    end
+    optimizeGame()
+end
 
-miscTab:AddTextBox("Auto Speed", function(text)
-    speedValue = tonumber(text) or 16
+--  Función para detener Anti-AFK
+local function stopAntiAFK()
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+        antiAFKConnection = nil
+    end
+    if sheryaGUI then
+        sheryaGUI:Destroy()
+        sheryaGUI = nil
+    end
+end
 
-    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = speedValue
+--  Botón para activar/desactivar
+mainTab:AddButton("Anti AFK GUI", function()
+    if not antiAFKActive then
+        antiAFKActive = true
+        sessionStartTime = tick()
+        createSheryaGUI()
+        startAntiAFK()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Sherya Script";
+            Text = "Anti-AFK activado! GUI visible.";
+            Duration = 5;
+        })
+        print("[✅] Anti-AFK activado con GUI")
+    else
+        antiAFKActive = false
+        stopAntiAFK()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Sherya Script";
+            Text = "Anti-AFK desactivado! GUI cerrada.";
+            Duration = 5;
+        })
+        print("[🛑] Anti-AFK desactivado")
     end
 end)
 
+mainTab:AddLabel("Anti-AFK UI activate")
+
+
+local miscTab = window:AddTab("Misc")
+
+miscTab:AddLabel("Misc").TextSize  = 24
+
+-- Variable global para la velocidad
+local player = game.Players.LocalPlayer
+local speedValue = 16
+local autoSpeedEnabled = false
+local autoSpeedConnection
+
+-- TextBox para ajustar la velocidad manualmente
+miscTab:AddTextBox("Auto Speed", function(text)
+    speedValue = tonumber(text) or 16
+end, "Ingresa la velocidad deseada")
+
+-- Función que aplica la velocidad fija constantemente
+local function applyConstantSpeed()
+    while autoSpeedEnabled do
+        pcall(function()
+            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                local humanoid = player.Character.Humanoid
+                if humanoid.WalkSpeed ~= speedValue then
+                    humanoid.WalkSpeed = speedValue
+                end
+            end
+        end)
+        task.wait(0.1) -- Ajusta este valor si quieres que se actualice más rápido o más lento
+    end
+end
+
+miscTab:AddLabel("-----{Speed}-----")
+
+-- Switch principal
 local autoSpeedSwitch = miscTab:AddSwitch("Auto Set Speed", function(bool)
     autoSpeedEnabled = bool
 
     if autoSpeedEnabled then
-        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        -- Aplicar la velocidad actual
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
             player.Character.Humanoid.WalkSpeed = speedValue
         end
 
+        -- Reaplicar velocidad al respawnear
         if autoSpeedConnection then
             autoSpeedConnection:Disconnect()
         end
 
         autoSpeedConnection = player.CharacterAdded:Connect(function(character)
             local humanoid = character:WaitForChild("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = speedValue
-            end
+            humanoid.WalkSpeed = speedValue
         end)
+
+        -- Mantener la velocidad fija en un loop
+        task.spawn(applyConstantSpeed)
     else
         if autoSpeedConnection then
             autoSpeedConnection:Disconnect()
@@ -170,6 +570,8 @@ local autoSpeedSwitch = miscTab:AddSwitch("Auto Set Speed", function(bool)
         end
     end
 end)
+
+miscTab:AddLabel("-----{Extras}-----")
 
 local infiniteJumpSwitch = miscTab:AddSwitch("Infinite Jump", function(bool)
     if bool then
@@ -214,205 +616,277 @@ local noClipSwitch = miscTab:AddSwitch("No Clip", function(bool)
     end
 end)
 
-miscTab:AddButton("Chat Espía", function()
-    loadstring(game:HttpGet("https://pastebin.com/raw/Vv9Yw3Uw"))()
-end)
+miscTab:AddLabel("-----{Time}-----")
 
-miscTab:AddButton("Anti AFK", function()
-    local VirtualUser = game:GetService("VirtualUser")
+local timeDropdown =
+    miscTab:AddDropdown(
+    "Change Time",
+    function(selection)
+        local lighting = game:GetService("Lighting")
 
-    player.Idled:Connect(function()
-        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        if selection == "Night" then
+            lighting.ClockTime = 0
+        elseif selection == "Day" then
+            lighting.ClockTime = 12
+        elseif selection == "Midnight" then
+            lighting.ClockTime = 6
+        end
+    end
+)
+
+timeDropdown:Add("Night")
+timeDropdown:Add("Day")
+timeDropdown:Add("Midnight")
+
+miscTab:AddLabel("-----{Server}-----")
+
+miscTab:AddButton("Rejoin Server", function()
+    local TeleportService = game:GetService("TeleportService")
+    
+    -- Obtener servidores disponibles y unirse a uno aleatorio
+    local success, result = pcall(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, nil, player)
     end)
-
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "Anti-AFK",
-        Text = "Activado correctamente",
-        Duration = 5
-    })
+    
+    if not success then
+        -- Si falla, intentar teleport normal a un nuevo servidor
+        TeleportService:Teleport(game.PlaceId, player)
+    end
+    
+    print("Cambiando a otro servidor...")
 end)
 
-local autoStomp = false
-local stompToolName = "Stomp"
+miscTab:AddLabel("-----{External scripts}-----")
+
+miscTab:AddButton("Infinite Yield", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end)
+
+miscTab:AddButton("GhostX Hub", function()
+    loadstring(game:HttpGet("https://scriptblox.com/raw/Universal-Script-GhostX-Hub-7158"))()
+end)
+
+local killerTab = window:AddTab("Killer")
+
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local localPlayer = Players.LocalPlayer
+local rootOffset = CFrame.new(0, 0, 2) -- Qué tan cerca se traen los jugadores
 
--- Función para buscar y equipar la herramienta Stomp
-local function equipStomp()
-    local character = player.Character or player.CharacterAdded:Wait()
-    local backpack = player:WaitForChild("Backpack")
-
-    if character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool").Name == stompToolName then
-        return -- Ya está equipada
+-- Funciones base
+local function getToolFromBackpackOrCharacter(name)
+    local backpack = localPlayer:FindFirstChild("Backpack")
+    local char = localPlayer.Character
+    if char then
+        local inChar = char:FindFirstChild(name)
+        if inChar then return inChar end
     end
-
-    local stompTool = backpack:FindFirstChild(stompToolName)
-    if stompTool then
-        stompTool.Parent = character
+    if backpack then
+        return backpack:FindFirstChild(name)
     end
+    return nil
 end
 
--- Auto equipar después de morir
-player.CharacterAdded:Connect(function()
-    if autoStomp then
-        task.wait(1)
-        equipStomp()
-    end
-end)
+local function equipTool(tool)
+    if not tool then return false end
+    pcall(function()
+        if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") and tool.Parent ~= localPlayer.Character then
+            tool.Parent = localPlayer.Character
+            task.wait(0.1)
+        end
+    end)
+    return true
+end
 
-local autoPunchAll = false
+local function activateTool(tool)
+    if not tool then return end
+    pcall(function()
+        tool:Activate()
+    end)
+end
 
-killerTab:AddSwitch("Auto Kill (Punch)", function(state)
-    autoPunchAll = state
+local function bringPlayerNear(plr)
+    if not plr.Character then return false end
+    local hrp = plr.Character:FindFirstChild("HumanoidRootPart") or plr.Character:FindFirstChild("Torso")
+    local myHRP = localPlayer.Character and (localPlayer.Character:FindFirstChild("HumanoidRootPart") or localPlayer.Character:FindFirstChild("Torso"))
+    if not hrp or not myHRP then return false end
+    pcall(function()
+        hrp.CFrame = myHRP.CFrame * rootOffset
+    end)
+end
 
-    task.spawn(function()
-        while autoPunchAll do
-            pcall(function()
-                local player = game.Players.LocalPlayer
-                local backpack = player:WaitForChild("Backpack")
-                local character = player.Character or player.CharacterAdded:Wait()
-                local hrp = character:FindFirstChild("HumanoidRootPart")
+-- Función para crear switches directamente dentro de killerTab
+local function createKillSwitch(tab, switchName, toolName)
+    local connectionName = ("_killConn_%s"):format(toolName:gsub("%s", ""))
+    tab:AddSwitch(switchName, function(on)
+        _G[connectionName] = _G[connectionName] or nil
 
-                -- Equipar herramienta Punch
-                local tool = backpack:FindFirstChild("Punch") or character:FindFirstChild("Punch")
-                if tool and tool.Parent ~= character then
-                    tool.Parent = character
-                end
+        if on then
+            local tool = getToolFromBackpackOrCharacter(toolName)
+            if tool then equipTool(tool) end
 
-                -- Iterar sobre jugadores
-                for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-                    if not autoPunchAll then break end -- por si se desactiva durante el ciclo
+            if _G[connectionName] then return end
 
-                    if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        hrp.CFrame = otherPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
-
-                        -- Activar Punch
-                        if tool and tool.Activate then
-                            tool:Activate()
-                        end
-
-                        task.wait(1.2) -- Espera antes de ir al siguiente jugador
+            _G[connectionName] = RunService.Heartbeat:Connect(function()
+                if not _G[connectionName] then return end
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= localPlayer and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+                        pcall(function()
+                            bringPlayerNear(plr)
+                            local curTool = getToolFromBackpackOrCharacter(toolName)
+                            if curTool then
+                                equipTool(curTool)
+                                activateTool(curTool)
+                                task.wait(0.05)
+                                activateTool(curTool)
+                            end
+                        end)
                     end
                 end
             end)
-            task.wait(1)
-        end
-    end)
-end)
-
-killerTab:AddSwitch("Auto Kill (Pisotear)", function(state)
-    autoStomp = state
-
-    task.spawn(function()
-        while autoStomp do
-            pcall(function()
-                equipStomp()
-
-                local character = player.Character
-                local root = character and character:FindFirstChild("HumanoidRootPart")
-                local tool = character and character:FindFirstChild(stompToolName)
-
-                if tool and root then
-                    for _, otherPlayer in pairs(Players:GetPlayers()) do
-                        if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") and otherPlayer.Character:FindFirstChild("Humanoid") and otherPlayer.Character.Humanoid.Health > 0 then
-                            local targetRoot = otherPlayer.Character.HumanoidRootPart
-                            root.CFrame = targetRoot.CFrame + Vector3.new(0, 2, 0) -- Te posiciona justo encima
-                            tool:Activate() -- Hace pisotón
-                            task.wait(0.2)
-                        end
-                    end
-                end
-            end)
-            task.wait(0.5)
-        end
-    end)
-end)
-
-local autoKill = false
-
-killerTab:AddSwitch("Auto Kill (Demon Sword)", function(state)
-    autoKill = state
-
-    if autoKill then
-        -- Equipa la Demon Sword al activar el switch
-        local character = player.Character or player.CharacterAdded:Wait()
-        local backpack = player:WaitForChild("Backpack")
-        local tool = backpack:FindFirstChild("Demon Sword") or character:FindFirstChild("Demon Sword")
-        if tool and tool.Parent ~= character then
-            tool.Parent = character
-            task.wait(0.2)
-        end
-    end
-
-    task.spawn(function()
-        while autoKill do
-            pcall(function()
-                local lp = game.Players.LocalPlayer
-                local character = lp.Character or lp.CharacterAdded:Wait()
-                local humanoidRoot = character:FindFirstChild("HumanoidRootPart")
-
-                -- Equipar Demon Sword si no está equipada
-                local tool = character:FindFirstChild("Demon Sword") or lp.Backpack:FindFirstChild("Demon Sword")
-                if tool and tool.Parent ~= character then
-                    tool.Parent = character
-                    task.wait(0.2)
-                end
-
-                -- Asegúrate que esté equipada
-                if not character:FindFirstChild("Demon Sword") then return end
-
-                for _, p in ipairs(game.Players:GetPlayers()) do
-                    if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                        local enemyHRP = p.Character.HumanoidRootPart
-
-                        -- Teletransportarse cerca del jugador (evitar colisión directa)
-                        humanoidRoot.CFrame = enemyHRP.CFrame * CFrame.new(0, 0, 2)
-
-                        -- Atacar con Demon Sword
-                        local sword = character:FindFirstChild("Demon Sword")
-                        if sword then
-                            sword:Activate()
-                        end
-
-                        task.wait(0.3) -- Tiempo entre cada ataque
-                    end
-                end
-            end)
-            task.wait(1) -- Esperar un poco antes de repetir
-        end
-    end)
-end)
-
-local player = game.Players.LocalPlayer
-
-for _, p in ipairs(game.Players:GetPlayers()) do
-    if p ~= player then
-        playersTab:AddButton("Teleport" .. p.Name, function()
-            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local myChar = player.Character
-                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                    myChar.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-                    library:Notify("Teletransportado a " .. p.Name)
-                end
+        else
+            if _G[connectionName] then
+                _G[connectionName]:Disconnect()
+                _G[connectionName] = nil
             end
-        end)
+        end
+    end)
+end
+
+-- 🔥 Crear los 3 switches en killerTab
+createKillSwitch(killerTab, "Auto Kill (Punch)", "Punch")
+createKillSwitch(killerTab, "Auto Kill (Demon)", "Demon")
+createKillSwitch(killerTab, "Auto Kill (Stomp)", "Stomp")
+
+local playersTab = window:AddTab("Players")
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local following = false
+local followTarget = nil
+
+-- 📌 Función: TP detrás del jugador
+local function followPlayer(targetPlayer)
+    local myChar = LocalPlayer.Character
+    local targetChar = targetPlayer.Character
+
+    if not (myChar and targetChar) then return end
+    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+    local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+
+    if myHRP and targetHRP then
+        local followPos = targetHRP.Position - (targetHRP.CFrame.LookVector * 3)
+        myHRP.CFrame = CFrame.new(followPos, targetHRP.Position)
     end
 end
+
+-- 📌 Dropdown dinámico de jugadores
+local followDropdown = playersTab:AddDropdown("Teleport player", function(selectedDisplayName)
+    if selectedDisplayName and selectedDisplayName ~= "" then
+        -- Buscar jugador por DisplayName
+        local target = nil
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr.DisplayName == selectedDisplayName then
+                target = plr
+                break
+            end
+        end
+
+        if target then
+            followTarget = target.Name -- Guardamos Name real para seguir
+            following = true
+            print("✅ Started following:", target.Name)
+
+            -- TP inmediato
+            followPlayer(target)
+        end
+    end
+end)
+
+-- 📌 Inicializar lista con DisplayNames
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        followDropdown:Add(player.DisplayName)
+    end
+end
+
+-- 📌 Actualizar lista cuando entren jugadores
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer then
+        followDropdown:Add(player.DisplayName)
+    end
+end)
+
+-- 📌 Actualizar lista cuando se vayan jugadores
+Players.PlayerRemoving:Connect(function(player)
+    -- Limpiamos y agregamos de nuevo
+    followDropdown:Clear()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            followDropdown:Add(plr.DisplayName)
+        end
+    end
+
+    -- Dejar de seguir si se fue
+    if followTarget == player.Name then
+        followTarget = nil
+        following = false
+    end
+end)
+
+-- 📌 Botón para dejar de seguir
+player:AddButton("Do not follow", function()
+    following = false
+    followTarget = nil
+    print("⛔ Stopped following")
+end)
+
+-- 📌 Loop de seguimiento automático
+task.spawn(function()
+    while task.wait(0.01) do
+        if following and followTarget then
+            local target = Players:FindFirstChild(followTarget)
+            if target then
+                followPlayer(target)
+            else
+                following = false
+                followTarget = nil
+            end
+        end
+    end
+end)
+
+-- 📌 Reintentar cuando respawnees
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    if following and followTarget then
+        local target = Players:FindFirstChild(followTarget)
+        if target then
+            followPlayer(target)
+        end
+    end
+end)
+
+local creditsTab = window:AddTab("Credits")
 
 creditsTab:AddLabel("╭──────────────────────────╮")
-creditsTab:AddLabel("   Script hecho por Isabella")
+creditsTab:AddLabel("         Galaxy Hub")
 creditsTab:AddLabel("╰──────────────────────────╯")
+creditsTab:AddLabel("")
+creditsTab:AddLabel("Script Made By")
+creditsTab:AddLabel("")
+creditsTab:AddLabel("Sherya (Isabella)")
+creditsTab:AddLabel("")
+creditsTab:AddLabel("Instagram : sheryaluck")
+creditsTab:AddLabel("Tik tok : sherya6000")
+creditsTab:AddLabel("Discord : isabella_hrz")
+creditsTab:AddLabel("Roblox : MissSherya")
+creditsTab:AddLabel("")
+creditsTab:AddLabel("Thanks for using the script")
+creditsTab:AddLabel("Errors to MD")
+creditsTab:AddLabel("")
 
-creditsTab:AddLabel("User de Roblox: MissSherya")
-creditsTab:AddLabel("Instagram: Sherya_Luck")
-creditsTab:AddLabel("TikTok: Sherya6000")
-creditsTab:AddLabel("Discord: isabella_hrz")
-
-creditsTab:AddLabel("Gracias por usar el script ")
-
-creditsTab:AddLabel("Recomienda el script para hacer mas actualizaciones")
-creditsTab:AddLabel("Hago peticiones de otros juegos")
-creditsTab:AddLabel("Diviertete amiguito")
-creditsTab:AddLabel("Cost 3000 robux, Acepto transferencias o tarjetas de google play")
+creditsTab:AddButton("Servidor Discord", function()
+    setclipboard("https://discord.gg/rnDrhTZZCF")
+end)
