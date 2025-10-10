@@ -1,18 +1,14 @@
-local library = loadfile("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Dr%20-%20Rxy%20By%20Shxryx")()
-
-local window = library:AddWindow("Galaxy Hub", {
-    main_color = Color3.fromRGB(75, 0, 130),
-    min_size = Vector2.new(400, 500),
-    can_resize = true,
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Dr%20-%20Rxy%20By%20Shxryx"))()
+local window = library:AddWindow("Muscle Legends", {
+    main_color = Color3.fromRGB(120,0,200),
+    panel_color = Color3.fromRGB(18,10,25),
+    title_text = "Dr-Ray Elerium V2",
+    animations = true,
 })
-
-local mainTab = window:AddTab("Main")
-local farmFolder = mainTab:AddFolder("Auto Farm")
-
-farmFolder:AddSwitch("Auto Punch", function(value)
-    print("Auto Punch:", value)
-end)
-
-farmFolder:AddButton("Rebirth", function()
-    print("Rebirth hecho!")
-end)
+local main = window:AddTab("Main")
+local farm = main:AddFolder("Auto Farm")
+farm:AddSwitch("Auto Punch", function(v) print("AutoPunch:", v) end, false)
+farm:AddButton("Rebirth", function() print("Rebirth!") end)
+farm:AddDropdown("Pick Pet", {"Dog","Dragon","Rock"}, function(sel) print("Pet:", sel) end)
+farm:AddSlider("Power", 0, 100, 50, function(val) print("Power:", val) end)
+farm:AddTextbox("User name...", function(txt) print("Text:", txt) end)
