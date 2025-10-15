@@ -1,185 +1,159 @@
--- DESOFUSCADOR CON WEBHOOK DE DISCORD (VERSIÓN MEJORADA)
--- =========================================================
+-- DESOFUSCADOR PARA DELTA EXECUTOR
+-- =================================
 
 -- ⚙️ CONFIGURACIÓN
-local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1428139247369584751/8qtb7uwXp6e50WxpzoTlHN4CHwn5oAJo0nKwSTyvOqP7ha9-sl0f-2lxoqjJiPcjWYb1" -- Pon tu webhook completo aquí
-local GITHUB_RAW_URL = "https://raw.githubusercontent.com/CoronaBlanca/2198832473482/refs/heads/main/dxsxfxscxtxr%20By%20Shxryx" -- O tu link
+local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1428150779838988299/dCT_aUK_Xdufmurz8t7cd5qtjmKljVYJ5UB2c-UvhkB-OsaJ64VGsXI-XRwR9wlZ_JKT" -- Pon tu webhook de Discord
+local GITHUB_RAW_URL = "https://raw.githubusercontent.com/CoronaBlanca/2198832473482/refs/heads/main/dxsxfxscxtxr%20By%20Shxryx"
 
--- 📊 Variables para capturar
+-- 📊 Captura
 local captured_code = {}
-local captured_info = {}
 
-print("🔍 Iniciando desofuscador...")
+print("🔍 Desofuscador Delta iniciado...")
 
--- 🪝 HOOK DE LOADSTRING
-local old_loadstring = loadstring or load
-_G.loadstring = function(code, ...)
-    print("✅ Código capturado! Longitud:", #code)
+-- 🪝 HOOK DE LOADSTRING (Delta usa loadstring estándar)
+local old_loadstring = loadstring
+loadstring = function(code, ...)
+    print("✅ ¡Código interceptado! Tamaño:", #code, "bytes")
     table.insert(captured_code, code)
     return old_loadstring(code, ...)
 end
-loadstring = _G.loadstring
 
--- 📤 FUNCIÓN PARA ENVIAR A DISCORD
-local function send_to_discord(content, title)
-    title = title or "Código Desofuscado"
+-- 📤 ENVIAR A DISCORD (Delta usa request)
+local function send_to_discord(content)
+    print("📤 Enviando a Discord...")
     
-    print("📤 Intentando enviar a Discord...")
-    
-    -- Crear payload
-    local data = {
-        username = "Desofuscador",
-        embeds = {{
-            title = "🔓 " .. title,
-            description = "```lua\n" .. content:sub(1, 4000) .. "\n```",
-            color = 3447003,
-            footer = {
-                text = "MoonSec Deobfuscator | " .. os.date("%H:%M:%S")
-            }
-        }}
-    }
-    
-    -- Intentar diferentes métodos de HTTP
-    local http_methods = {
-        -- Método 1: syn (Synapse X)
-        function()
-            local json = game:GetService("HttpService"):JSONEncode(data)
-            return syn.request({
-                Url = WEBHOOK_URL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = json
-            })
-        end,
-        
-        -- Método 2: http_request (KRNL, Fluxus)
-        function()
-            local json = game:GetService("HttpService"):JSONEncode(data)
-            return http_request({
-                Url = WEBHOOK_URL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = json
-            })
-        end,
-        
-        -- Método 3: request (Script-Ware)
-        function()
-            local json = game:GetService("HttpService"):JSONEncode(data)
-            return request({
-                Url = WEBHOOK_URL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = json
-            })
-        end
-    }
-    
-    -- Probar cada método
-    for i, method in ipairs(http_methods) do
-        local success, result = pcall(method)
-        if success then
-            print("✅ Enviado con método", i)
-            return true
-        else
-            warn("❌ Método", i, "falló:", result)
-        end
+    -- Limitar tamaño (Discord máximo ~2000 caracteres)
+    local preview = content
+    if #content > 3900 then
+        preview = content:sub(1, 3900) .. "\n\n... (código muy largo, ver archivo)"
     end
     
-    warn("❌ Todos los métodos HTTP fallaron")
-    return false
-end
-
--- 💾 GUARDAR EN ARCHIVO (backup)
-local function save_to_file(content, filename)
-    filename = filename or "deobfuscated.lua"
+    local payload = game:GetService("HttpService"):JSONEncode({
+        username = "Delta Deobfuscator",
+        embeds = {{
+            title = "🔓 Código Desofuscado",
+            description = "```lua\n" .. preview .. "\n```",
+            color = 5814783,
+            footer = {
+                text = "Delta Executor • " .. os.date("%H:%M:%S")
+            }
+        }}
+    })
     
-    if writefile then
-        writefile(filename, content)
-        print("💾 Guardado en:", filename)
+    -- Delta Executor usa 'request'
+    local success, response = pcall(function()
+        return request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = payload
+        })
+    end)
+    
+    if success and response.StatusCode == 204 then
+        print("✅ Enviado a Discord correctamente")
         return true
     else
-        warn("❌ writefile no disponible")
+        warn("❌ Error enviando:", response and response.StatusCode or "desconocido")
         return false
     end
 end
 
--- 🎯 EJECUTAR Y CAPTURAR
-print("🚀 Descargando código...")
-
--- Descargar el código
-local success_download, code = pcall(function()
-    if GITHUB_RAW_URL:find("http") then
-        return game:HttpGet(GITHUB_RAW_URL)
+-- 💾 GUARDAR ARCHIVO
+local function save_file(content)
+    local filename = "deobfuscated_" .. os.time() .. ".lua"
+    
+    if writefile then
+        writefile(filename, content)
+        print("💾 Guardado en workspace:", filename)
+        return true
     else
-        return GITHUB_RAW_URL -- Es código directo
+        warn("⚠️ writefile no disponible en Delta")
+        return false
     end
+end
+
+-- 🚀 DESCARGAR CÓDIGO
+print("📥 Descargando desde GitHub...")
+
+local success_download, downloaded_code = pcall(function()
+    return game:HttpGet(GITHUB_RAW_URL, true)
 end)
 
 if not success_download then
-    warn("❌ Error descargando:", code)
+    warn("❌ Error descargando:", downloaded_code)
+    warn("💡 Verifica que el link sea correcto y público")
     return
 end
 
-print("📦 Código descargado. Longitud:", #code)
+print("✅ Descargado:", #downloaded_code, "bytes")
+
+-- ⚡ EJECUTAR
 print("⚡ Ejecutando código ofuscado...")
 
--- Ejecutar el código
 local success_exec, error_msg = pcall(function()
-    loadstring(code)()
+    loadstring(downloaded_code)()
 end)
 
 if not success_exec then
-    warn("❌ Error ejecutando:", error_msg)
+    warn("⚠️ Error al ejecutar:", error_msg)
+    print("💡 Esto es normal si el código necesita un contexto específico")
 end
 
--- Esperar a que capture todo
-wait(3)
+-- ⏳ ESPERAR CAPTURA
+wait(2)
 
 -- 📋 PROCESAR RESULTADOS
-print("📊 Procesando resultados...")
+print("\n" .. string.rep("=", 50))
+print("📊 RESULTADOS:")
+print(string.rep("=", 50))
 
-local final_report = ""
+local final_output = ""
 
 if #captured_code > 0 then
-    print("🎉 Se capturó", #captured_code, "código(s)")
+    print("🎉 ¡ÉXITO! Se capturaron", #captured_code, "código(s)")
     
-    for i, captured in ipairs(captured_code) do
-        final_report = final_report .. "-- CÓDIGO CAPTURADO #" .. i .. "\n"
-        final_report = final_report .. "-- Longitud: " .. #captured .. " caracteres\n"
-        final_report = final_report .. "-- " .. string.rep("=", 50) .. "\n\n"
-        final_report = final_report .. captured .. "\n\n"
+    for i, code in ipairs(captured_code) do
+        final_output = final_output .. "-- ========== CÓDIGO #" .. i .. " ==========\n"
+        final_output = final_output .. "-- Tamaño: " .. #code .. " caracteres\n"
+        final_output = final_output .. "-- Timestamp: " .. os.date() .. "\n\n"
+        final_output = final_output .. code .. "\n\n"
     end
+    
+    print("📝 Código total capturado:", #final_output, "caracteres")
 else
-    final_report = "⚠️ No se capturó ningún código.\n"
-    final_report = final_report .. "Esto puede significar que:\n"
-    final_report = final_report .. "1. El código no usa loadstring()\n"
-    final_report = final_report .. "2. Ya está desofuscado\n"
-    final_report = final_report .. "3. Necesita un método de captura diferente\n\n"
-    final_report = final_report .. "Código original:\n" .. code:sub(1, 2000)
+    print("⚠️ No se capturó código con loadstring")
+    print("💡 El script podría:")
+    print("   1. Ya estar desofuscado")
+    print("   2. No usar loadstring()")
+    print("   3. Usar otro método de ejecución")
+    
+    final_output = "-- NO SE CAPTURÓ CÓDIGO DINÁMICO\n"
+    final_output = final_output .. "-- Código original descargado:\n\n"
+    final_output = final_output .. downloaded_code
 end
 
 -- 📤 ENVIAR Y GUARDAR
-print("📤 Enviando resultados...")
+print("\n📤 Enviando resultados...")
 
--- Intentar enviar a Discord
-local sent = send_to_discord(final_report, "Resultado de Desofuscación")
+local sent = send_to_discord(final_output)
+local saved = save_file(final_output)
 
--- Siempre guardar en archivo como backup
-save_to_file(final_report, "deobfuscated_" .. os.time() .. ".lua")
+-- 🏁 RESUMEN FINAL
+print("\n" .. string.rep("=", 50))
+print("🏁 PROCESO COMPLETADO")
+print(string.rep("=", 50))
+print("✉️  Webhook:", sent and "✅ Enviado" or "❌ Falló")
+print("💾 Archivo:", saved and "✅ Guardado" or "❌ No disponible")
+print(string.rep("=", 50))
 
 if sent then
-    print("✅ ¡Completado! Revisa tu Discord")
+    print("✅ ¡Revisa tu canal de Discord!")
+elseif saved then
+    print("💡 Revisa la carpeta workspace de Delta")
 else
-    print("⚠️ No se pudo enviar a Discord, pero se guardó en archivo")
+    print("📋 Código capturado (cópialo manualmente):")
+    print(final_output:sub(1, 500) .. "...")
 end
-
-print("🏁 Proceso terminado")
-
--- 📖 INFORMACIÓN ADICIONAL
-print("\n" .. string.rep("=", 60))
-print("📊 RESUMEN:")
-print("- Códigos capturados:", #captured_code)
-print("- Webhook configurado:", WEBHOOK_URL ~= "TU_WEBHOOK_AQUI")
-print("- Archivo guardado: deobfuscated_" .. os.time() .. ".lua")
-print(string.rep("=", 60))
