@@ -1,30 +1,42 @@
--- Cargar la librería UI
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk"))()
+-- Cargar y corregir la librería 25092009UI
+local raw = game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk")
 
--- Crear una ventana principal
+-- Si no devuelve nada, agregamos un "return Library" al final
+local fixed = raw .. "\nreturn Library"
+
+local Library = loadstring(fixed)()
+if not Library then
+    warn("⚠️ No se pudo inicializar la librería 25092009UI")
+    return
+end
+
+print("✅ Librería 25092009UI cargada correctamente")
+
+-- ============================
+-- EJEMPLO DE INTERFAZ COMPLETA
+-- ============================
+
 local Window = Library:CreateWindow({
-    Title = "Panel de Control",
+    Title = "Panel Delta UI",
     Size = UDim2.new(0, 520, 0, 400),
-    Theme = "Dark", -- si soporta temas, usa "Light" o "Dark"
 })
 
--- Crear pestañas (tabs)
+-- Crear pestañas
 local MainTab = Window:CreateTab("Inicio")
 local ConfigTab = Window:CreateTab("Configuración")
-local VisualTab = Window:CreateTab("Visuales")
+local ExtraTab = Window:CreateTab("Extra")
 
--- ==============================
--- TAB 1: INICIO
--- ==============================
-
-MainTab:CreateLabel("Bienvenido a tu panel personalizado")
+-- ----------------------------
+-- TAB: INICIO
+-- ----------------------------
+MainTab:CreateLabel("Bienvenido a la interfaz Delta")
 
 MainTab:CreateButton({
-    Name = "Enviar mensaje",
+    Name = "Notificar",
     Callback = function()
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Notificación",
-            Text = "¡Hola desde la UI!",
+            Title = "UI Activa",
+            Text = "¡Bienvenido a tu panel!",
             Duration = 3
         })
     end
@@ -34,24 +46,19 @@ MainTab:CreateToggle({
     Name = "Modo rápido",
     Default = false,
     Callback = function(state)
-        if state then
-            print("Modo rápido activado")
-        else
-            print("Modo rápido desactivado")
-        end
+        print("Modo rápido:", state and "Activado" or "Desactivado")
     end
 })
 
--- ==============================
--- TAB 2: CONFIGURACIÓN
--- ==============================
-
-ConfigTab:CreateLabel("Ajustes Generales")
+-- ----------------------------
+-- TAB: CONFIGURACIÓN
+-- ----------------------------
+ConfigTab:CreateLabel("Ajustes del personaje")
 
 ConfigTab:CreateSlider({
     Name = "Velocidad del jugador",
     Min = 16,
-    Max = 100,
+    Max = 150,
     Default = 16,
     Callback = function(value)
         local plr = game.Players.LocalPlayer
@@ -62,7 +69,7 @@ ConfigTab:CreateSlider({
 })
 
 ConfigTab:CreateSlider({
-    Name = "Altura del salto",
+    Name = "Altura de salto",
     Min = 50,
     Max = 200,
     Default = 50,
@@ -74,52 +81,28 @@ ConfigTab:CreateSlider({
     end
 })
 
-ConfigTab:CreateDropdown({
-    Name = "Seleccionar color de tema",
-    Options = {"Azul", "Rojo", "Verde", "Morado"},
-    Default = "Azul",
-    Callback = function(option)
-        print("Tema seleccionado:", option)
-    end
-})
-
--- ==============================
--- TAB 3: VISUALES
--- ==============================
-
-VisualTab:CreateLabel("Ajustes de Apariencia")
-
-VisualTab:CreateToggle({
-    Name = "Sombras activadas",
-    Default = true,
-    Callback = function(state)
-        if state then
-            print("Sombras ON")
-        else
-            print("Sombras OFF")
-        end
-    end
-})
-
-VisualTab:CreateButton({
-    Name = "Reiniciar ajustes visuales",
+ConfigTab:CreateButton({
+    Name = "Reiniciar ajustes",
     Callback = function()
-        print("Ajustes visuales reiniciados")
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Reinicio",
-            Text = "Visuales restaurados.",
-            Duration = 2
-        })
+        local plr = game.Players.LocalPlayer
+        if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
+            plr.Character.Humanoid.WalkSpeed = 16
+            plr.Character.Humanoid.JumpPower = 50
+        end
+        print("Ajustes restaurados")
     end
 })
 
--- ==============================
--- MENSAJE FINAL
--- ==============================
+-- ----------------------------
+-- TAB: EXTRA
+-- ----------------------------
+ExtraTab:CreateLabel("Opciones adicionales")
 
-print("✅ UI cargada correctamente")
-game.StarterGui:SetCore("SendNotification", {
-    Title = "Panel Activo",
-    Text = "Tu UI se ha iniciado correctamente.",
-    Duration = 3
+ExtraTab:CreateButton({
+    Name = "Cerrar UI",
+    Callback = function()
+        Library:Destroy() -- si la librería tiene función para cerrar
+    end
 })
+
+print("✅ Interfaz creada correctamente")
