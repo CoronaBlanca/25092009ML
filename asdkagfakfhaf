@@ -1,159 +1,268 @@
--- DESOFUSCADOR PARA DELTA EXECUTOR
--- =================================
+-- DESOFUSCADOR CON WEBHOOK DE DISCORD (VERSIÓN MEJORADA)
+-- =========================================================
 
 -- ⚙️ CONFIGURACIÓN
-local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1428150779838988299/dCT_aUK_Xdufmurz8t7cd5qtjmKljVYJ5UB2c-UvhkB-OsaJ64VGsXI-XRwR9wlZ_JKT" -- Pon tu webhook de Discord
-local GITHUB_RAW_URL = "https://raw.githubusercontent.com/CoronaBlanca/2198832473482/refs/heads/main/dxsxfxscxtxr%20By%20Shxryx"
+local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1428150779838988299/dCT_aUK_Xdufmurz8t7cd5qtjmKljVYJ5UB2c-UvhkB-OsaJ64VGsXI-XRwR9wlZ_JKT" -- Pon tu webhook completo aquí
+local GITHUB_RAW_URL = "https://raw.githubusercontent.com/CoronaBlanca/2198832473482/refs/heads/main/dxsxfxscxtxr%20By%20Shxryx" -- O tu link
 
--- 📊 Captura
-local captured_code = {}
+-- 📊 Captura profunda
+local captured = {
+    loadstring_calls = {},
+    function_calls = {},
+    getfenv_calls = {},
+    setfenv_calls = {},
+    debug_info = {},
+    strings_found = {},
+    variables = {}
+}
 
-print("🔍 Desofuscador Delta iniciado...")
+print("🔍 Desofuscador Avanzado MoonSec V3")
+print("=" .. string.rep("=", 49))
 
--- 🪝 HOOK DE LOADSTRING (Delta usa loadstring estándar)
+-- 🪝 HOOK LOADSTRING (múltiples niveles)
 local old_loadstring = loadstring
-loadstring = function(code, ...)
-    print("✅ ¡Código interceptado! Tamaño:", #code, "bytes")
-    table.insert(captured_code, code)
-    return old_loadstring(code, ...)
-end
-
--- 📤 ENVIAR A DISCORD (Delta usa request)
-local function send_to_discord(content)
-    print("📤 Enviando a Discord...")
+_G.loadstring = function(code, chunkname)
+    print("📦 loadstring() llamado")
     
-    -- Limitar tamaño (Discord máximo ~2000 caracteres)
-    local preview = content
-    if #content > 3900 then
-        preview = content:sub(1, 3900) .. "\n\n... (código muy largo, ver archivo)"
+    -- Verificar si NO es el mismo código ofuscado
+    if not code:find("MoonSec V3") then
+        print("✅ ¡CÓDIGO NUEVO DETECTADO!")
+        table.insert(captured.loadstring_calls, {
+            code = code,
+            size = #code,
+            chunk = chunkname or "unknown"
+        })
+    else
+        print("⚠️ Detectado código MoonSec (ignorado)")
     end
     
+    return old_loadstring(code, chunkname)
+end
+loadstring = _G.loadstring
+
+-- 🪝 HOOK LOAD
+if load then
+    local old_load = load
+    _G.load = function(chunk, ...)
+        if type(chunk) == "string" and not chunk:find("MoonSec") then
+            print("📦 load() con código limpio detectado")
+            table.insert(captured.loadstring_calls, {
+                code = chunk,
+                size = #chunk,
+                source = "load()"
+            })
+        end
+        return old_load(chunk, ...)
+    end
+    load = _G.load
+end
+
+-- 🪝 HOOK GETFENV (capturar variables globales creadas)
+local old_getfenv = getfenv
+getfenv = function(level)
+    local env = old_getfenv(level)
+    
+    -- Capturar nuevas variables globales
+    for k, v in pairs(env) do
+        if type(v) == "function" and not captured.variables[k] then
+            captured.variables[k] = true
+            table.insert(captured.function_calls, {
+                name = k,
+                type = type(v)
+            })
+        end
+    end
+    
+    return env
+end
+
+-- 🪝 HOOK DEBUG.GETINFO (capturar funciones generadas)
+if debug and debug.getinfo then
+    local old_getinfo = debug.getinfo
+    debug.getinfo = function(func, what)
+        local info = old_getinfo(func, what)
+        
+        if info and info.source and not info.source:find("MoonSec") then
+            table.insert(captured.debug_info, {
+                source = info.source,
+                name = info.name or "anonymous",
+                line = info.linedefined or 0
+            })
+        end
+        
+        return info
+    end
+end
+
+-- 🪝 CAPTURAR STRINGS (buscar patrones de código)
+local old_tostring = tostring
+tostring = function(obj)
+    local str = old_tostring(obj)
+    
+    -- Detectar si es código Lua
+    if type(str) == "string" and #str > 50 then
+        if str:find("local ") or str:find("function") or str:find("return") then
+            if not str:find("MoonSec") then
+                print("🔍 String con código detectado")
+                table.insert(captured.strings_found, str)
+            end
+        end
+    end
+    
+    return str
+end
+
+-- 📤 FUNCIÓN PARA ENVIAR
+local function send_to_discord(content, title)
+    title = title or "Resultados"
+    
+    local preview = content:sub(1, 3900)
+    
     local payload = game:GetService("HttpService"):JSONEncode({
-        username = "Delta Deobfuscator",
+        username = "MoonSec Hunter",
         embeds = {{
-            title = "🔓 Código Desofuscado",
+            title = "🔓 " .. title,
             description = "```lua\n" .. preview .. "\n```",
-            color = 5814783,
-            footer = {
-                text = "Delta Executor • " .. os.date("%H:%M:%S")
-            }
+            color = 15158332,
+            footer = {text = os.date("%H:%M:%S")}
         }}
     })
     
-    -- Delta Executor usa 'request'
-    local success, response = pcall(function()
-        return request({
+    pcall(function()
+        request({
             Url = WEBHOOK_URL,
             Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
+            Headers = {["Content-Type"] = "application/json"},
             Body = payload
         })
     end)
-    
-    if success and response.StatusCode == 204 then
-        print("✅ Enviado a Discord correctamente")
-        return true
-    else
-        warn("❌ Error enviando:", response and response.StatusCode or "desconocido")
-        return false
-    end
 end
 
--- 💾 GUARDAR ARCHIVO
-local function save_file(content)
-    local filename = "deobfuscated_" .. os.time() .. ".lua"
-    
+-- 💾 GUARDAR
+local function save_file(content, name)
     if writefile then
-        writefile(filename, content)
-        print("💾 Guardado en workspace:", filename)
-        return true
-    else
-        warn("⚠️ writefile no disponible en Delta")
-        return false
+        writefile(name, content)
+        print("💾 Guardado:", name)
     end
 end
 
--- 🚀 DESCARGAR CÓDIGO
-print("📥 Descargando desde GitHub...")
+-- 🚀 DESCARGAR Y EJECUTAR
+print("\n📥 Descargando código...")
 
-local success_download, downloaded_code = pcall(function()
+local success, code = pcall(function()
     return game:HttpGet(GITHUB_RAW_URL, true)
 end)
 
-if not success_download then
-    warn("❌ Error descargando:", downloaded_code)
-    warn("💡 Verifica que el link sea correcto y público")
+if not success then
+    warn("❌ Error:", code)
     return
 end
 
-print("✅ Descargado:", #downloaded_code, "bytes")
+print("✅ Descargado:", #code, "bytes")
 
--- ⚡ EJECUTAR
-print("⚡ Ejecutando código ofuscado...")
+-- ⚡ EJECUTAR CON MÁXIMA CAPTURA
+print("\n⚡ Ejecutando con hooks activos...")
+print("⏳ Esto puede tardar unos segundos...\n")
 
-local success_exec, error_msg = pcall(function()
-    loadstring(downloaded_code)()
+-- Ejecutar
+pcall(function()
+    loadstring(code)()
 end)
 
-if not success_exec then
-    warn("⚠️ Error al ejecutar:", error_msg)
-    print("💡 Esto es normal si el código necesita un contexto específico")
-end
+-- Esperar a que termine
+wait(5)
 
--- ⏳ ESPERAR CAPTURA
-wait(2)
-
--- 📋 PROCESAR RESULTADOS
 print("\n" .. string.rep("=", 50))
-print("📊 RESULTADOS:")
+print("📊 ANÁLISIS DE CAPTURA")
 print(string.rep("=", 50))
 
-local final_output = ""
+-- 📋 ANALIZAR RESULTADOS
+local report = "-- REPORTE DE DESOFUSCACIÓN MOONSEC V3\n"
+report = report .. "-- Timestamp: " .. os.date() .. "\n"
+report = report .. "-- " .. string.rep("=", 48) .. "\n\n"
 
-if #captured_code > 0 then
-    print("🎉 ¡ÉXITO! Se capturaron", #captured_code, "código(s)")
+-- 1. Códigos capturados con loadstring
+if #captured.loadstring_calls > 0 then
+    print("✅ Loadstring calls:", #captured.loadstring_calls)
     
-    for i, code in ipairs(captured_code) do
-        final_output = final_output .. "-- ========== CÓDIGO #" .. i .. " ==========\n"
-        final_output = final_output .. "-- Tamaño: " .. #code .. " caracteres\n"
-        final_output = final_output .. "-- Timestamp: " .. os.date() .. "\n\n"
-        final_output = final_output .. code .. "\n\n"
+    report = report .. "-- ========== CÓDIGOS EJECUTADOS ==========\n\n"
+    
+    for i, call in ipairs(captured.loadstring_calls) do
+        report = report .. "-- Código #" .. i .. " (" .. call.size .. " bytes)\n"
+        report = report .. "-- Source: " .. (call.chunk or call.source or "unknown") .. "\n\n"
+        report = report .. call.code .. "\n\n"
+        report = report .. string.rep("-", 50) .. "\n\n"
     end
-    
-    print("📝 Código total capturado:", #final_output, "caracteres")
 else
-    print("⚠️ No se capturó código con loadstring")
-    print("💡 El script podría:")
-    print("   1. Ya estar desofuscado")
-    print("   2. No usar loadstring()")
-    print("   3. Usar otro método de ejecución")
-    
-    final_output = "-- NO SE CAPTURÓ CÓDIGO DINÁMICO\n"
-    final_output = final_output .. "-- Código original descargado:\n\n"
-    final_output = final_output .. downloaded_code
+    print("⚠️ No se capturaron loadstring calls")
+    report = report .. "-- ⚠️ NO SE DETECTARON LLAMADAS A LOADSTRING\n\n"
 end
+
+-- 2. Funciones globales creadas
+if #captured.function_calls > 0 then
+    print("📝 Funciones detectadas:", #captured.function_calls)
+    
+    report = report .. "-- ========== FUNCIONES GLOBALES ==========\n\n"
+    
+    for _, func in ipairs(captured.function_calls) do
+        report = report .. "-- " .. func.name .. " (" .. func.type .. ")\n"
+    end
+    report = report .. "\n"
+end
+
+-- 3. Strings con código
+if #captured.strings_found > 0 then
+    print("🔤 Strings encontrados:", #captured.strings_found)
+    
+    report = report .. "-- ========== STRINGS CAPTURADOS ==========\n\n"
+    
+    for i, str in ipairs(captured.strings_found) do
+        report = report .. "-- String #" .. i .. ":\n"
+        report = report .. str .. "\n\n"
+    end
+end
+
+-- 4. Info de debug
+if #captured.debug_info > 0 then
+    print("🐛 Debug info:", #captured.debug_info)
+    
+    report = report .. "-- ========== DEBUG INFO ==========\n\n"
+    
+    for _, info in ipairs(captured.debug_info) do
+        report = report .. "-- Function: " .. info.name .. "\n"
+        report = report .. "-- Source: " .. info.source .. "\n"
+        report = report .. "-- Line: " .. info.line .. "\n\n"
+    end
+end
+
+-- 📊 RESUMEN
+print("\n" .. string.rep("=", 50))
+print("📊 RESUMEN FINAL")
+print(string.rep("=", 50))
+print("Loadstring calls:", #captured.loadstring_calls)
+print("Funciones:", #captured.function_calls)
+print("Strings:", #captured.strings_found)
+print("Debug info:", #captured.debug_info)
+print(string.rep("=", 50))
 
 -- 📤 ENVIAR Y GUARDAR
-print("\n📤 Enviando resultados...")
-
-local sent = send_to_discord(final_output)
-local saved = save_file(final_output)
-
--- 🏁 RESUMEN FINAL
-print("\n" .. string.rep("=", 50))
-print("🏁 PROCESO COMPLETADO")
-print(string.rep("=", 50))
-print("✉️  Webhook:", sent and "✅ Enviado" or "❌ Falló")
-print("💾 Archivo:", saved and "✅ Guardado" or "❌ No disponible")
-print(string.rep("=", 50))
-
-if sent then
-    print("✅ ¡Revisa tu canal de Discord!")
-elseif saved then
-    print("💡 Revisa la carpeta workspace de Delta")
+if #captured.loadstring_calls > 0 then
+    print("\n✅ ¡ÉXITO! Código capturado")
+    send_to_discord(report, "Código Desofuscado")
+    save_file(report, "deobfuscated_success.lua")
 else
-    print("📋 Código capturado (cópialo manualmente):")
-    print(final_output:sub(1, 500) .. "...")
+    print("\n⚠️ NO SE CAPTURÓ CÓDIGO LIMPIO")
+    print("\n💡 Posibles razones:")
+    print("   • MoonSec usa bytecode puro (sin loadstring)")
+    print("   • Necesita método de captura diferente")
+    print("   • El código ya está desofuscado")
+    
+    report = report .. "\n-- CÓDIGO ORIGINAL (sin desofuscar):\n\n"
+    report = report .. code
+    
+    send_to_discord(report:sub(1, 3000), "Análisis sin código limpio")
+    save_file(report, "analysis_report.lua")
 end
+
+print("\n🏁 Proceso terminado")
+print("💾 Revisa los archivos generados en workspace")
