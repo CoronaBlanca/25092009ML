@@ -38,49 +38,49 @@ _PlayerAdded34:Connect(function(_37, _37_2, _37_3)
     local _ = _37.UserId
 end)
 local _call50 = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk%20L%20By%20Shxryx"))().new({
-    Logo = "http://www.roblox.com/asset/?id=134566684815918",
-    Title = "Galaxy Hub",
-    Description = "By Sherya (Isabella)",
+    Logo = "https://create.roblox.com/store/asset/134528145536607/Galaxy-Icon",
+    Title = "Galaxy VXI | New UI Future Updates",
+    Description = "https://discord.gg/zYrg2qPjTp",
     Keybind = Enum.KeyCode.LeftControl,
 })
 local _call52 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Main interface",
     Title = "Main",
 })
 local _call54 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Tool farm",
     Title = "Farm",
 })
 local _call56 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Extra options",
     Title = "Misc",
 })
 local _call58 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Kill multiple players",
     Title = "Killer",
 })
 local _call60 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Crystal Pets & Auras",
     Title = "Crystal",
 })
 local _call62 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Different places",
     Title = "Telepor",
 })
 local _call64 = _call50:NewTab({
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Description = "Crédits | Discord",
     Title = "Credits",
 })
 local _call66 = _call52:NewSection({
     Title = "Farm",
-    Icon = "rbxassetid://103660508328964",
+    Icon = "rbxassetid://134528145536607",
     Position = "Left",
 })
 _call66:NewToggle({
