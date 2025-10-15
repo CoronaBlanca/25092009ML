@@ -1,77 +1,125 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Xlxrxxm%20bx%20shxryx", true))()
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local displayName = player.DisplayName ~= "" and player.DisplayName or player.Name
-local title = (" Hub | Hello %s"):format(displayName)
-local window = library:AddWindow(title, {main_color = Color3.fromRGB(0,0,0), min_size = Vector2.new(650,870), can_resize = true})
+-- Cargar la librería UI
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk"))()
 
-local SoundService = game:GetService("SoundService")
-local Sound = Instance.new("Sound")
-Sound.Name = "GenesisMusic"
-Sound.Parent = SoundService
-Sound.Volume = 1
-Sound.Looped = false
+-- Crear una ventana principal
+local Window = Library:CreateWindow({
+    Title = "Panel de Control",
+    Size = UDim2.new(0, 520, 0, 400),
+    Theme = "Dark", -- si soporta temas, usa "Light" o "Dark"
+})
 
-local Playlist = {}
-local currentIndex = 0
-local isPaused = false
-local MP3_URL = ""
-local fileName = "GenesisPlaylist_"..player.Name..".txt"
-local tempIndex = 0
+-- Crear pestañas (tabs)
+local MainTab = Window:CreateTab("Inicio")
+local ConfigTab = Window:CreateTab("Configuración")
+local VisualTab = Window:CreateTab("Visuales")
 
-if isfile(fileName) then
-    local data = readfile(fileName)
-    for url in string.gmatch(data,"[^,]+") do
-        table.insert(Playlist,url)
+-- ==============================
+-- TAB 1: INICIO
+-- ==============================
+
+MainTab:CreateLabel("Bienvenido a tu panel personalizado")
+
+MainTab:CreateButton({
+    Name = "Enviar mensaje",
+    Callback = function()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Notificación",
+            Text = "¡Hola desde la UI!",
+            Duration = 3
+        })
     end
-else
-    writefile(fileName,"")
-end
+})
 
-local function savePlaylist()
-    writefile(fileName,table.concat(Playlist,","))
-end
-
-local function loadMP3(url)
-    tempIndex = tempIndex + 1
-    local tempFile = "GenesisMusic_"..tempIndex..".mp3"
-    pcall(function()
-        if isfile(tempFile) then delfile(tempFile) end
-        writefile(tempFile,game:HttpGet(url))
-        Sound.SoundId = getcustomasset(tempFile)
-        Sound.Loaded:Wait()
-    end)
-end
-
-local MusicTab = window:AddTab("🎶 Music Player")
-local TimeLabel = MusicTab:AddLabel("⏱️ 00:00 / 00:00")
-
-MusicTab:AddTextBox("🎵 MP3 URL",function(value) MP3_URL = value end,{["clear"]=false})
-MusicTab:AddButton("📥 Cargar MP3",function() if MP3_URL~="" then loadMP3(MP3_URL) end end)
-MusicTab:AddButton("▶ Play",function() pcall(function() if Sound.SoundId=="" and MP3_URL~="" then loadMP3(MP3_URL) end if isPaused then isPaused=false; Sound:Resume() else Sound:Play() end end) end)
-MusicTab:AddButton("⏸ Pause",function() pcall(function() if Sound.IsPlaying then Sound:Pause(); isPaused=true end end) end)
-MusicTab:AddButton("⏹ Stop",function() pcall(function() Sound:Stop(); Sound.TimePosition=0; isPaused=false end) end)
-MusicTab:AddButton("🔄 Reiniciar",function() if Sound.SoundId~="" then Sound.TimePosition=0; if not Sound.IsPlaying then Sound:Play() end end end)
-MusicTab:AddTextBox("🔊 Volumen (0-5)",function(val) local num=tonumber(val) if num then Sound.Volume=math.clamp(num,0,5) end end,{["clear"]=false})
-MusicTab:AddButton("➕ Add to Playlist",function() if MP3_URL~="" then table.insert(Playlist,MP3_URL); savePlaylist() end end)
-MusicTab:AddButton("▶️ Play Playlist",function() if #Playlist>0 then currentIndex=1; loadMP3(Playlist[currentIndex]); Sound:Play(); isPaused=false end end)
-MusicTab:AddButton("⏭️ Next",function() if #Playlist>0 then currentIndex=currentIndex+1; if currentIndex>#Playlist then currentIndex=1 end; loadMP3(Playlist[currentIndex]); Sound:Play(); isPaused=false end end)
-MusicTab:AddButton("⏮️ Previous",function() if #Playlist>0 then currentIndex=currentIndex-1; if currentIndex<1 then currentIndex=#Playlist end; loadMP3(Playlist[currentIndex]); Sound:Play(); isPaused=false end end)
-MusicTab:AddButton("🗑️ Clear Playlist",function() Playlist={}; savePlaylist(); currentIndex=0 end)
-MusicTab:AddToggle("🔁 Loop",false,function(state) Sound.Looped=state end)
-
-task.spawn(function()
-    while task.wait(0.2) do
-        if Sound.SoundId~="" and Sound.IsLoaded then
-            TimeLabel.Text=string.format("⏱️ %02d:%02d / %02d:%02d",
-                math.floor(Sound.TimePosition/60), Sound.TimePosition%60,
-                math.floor(Sound.TimeLength/60), Sound.TimeLength%60)
-        end
-        if Sound.IsLoaded and not Sound.IsPlaying and not isPaused and #Playlist>0 then
-            currentIndex=currentIndex+1
-            if currentIndex>#Playlist then currentIndex=1 end
-            loadMP3(Playlist[currentIndex])
-            Sound:Play()
+MainTab:CreateToggle({
+    Name = "Modo rápido",
+    Default = false,
+    Callback = function(state)
+        if state then
+            print("Modo rápido activado")
+        else
+            print("Modo rápido desactivado")
         end
     end
-end)
+})
+
+-- ==============================
+-- TAB 2: CONFIGURACIÓN
+-- ==============================
+
+ConfigTab:CreateLabel("Ajustes Generales")
+
+ConfigTab:CreateSlider({
+    Name = "Velocidad del jugador",
+    Min = 16,
+    Max = 100,
+    Default = 16,
+    Callback = function(value)
+        local plr = game.Players.LocalPlayer
+        if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
+            plr.Character.Humanoid.WalkSpeed = value
+        end
+    end
+})
+
+ConfigTab:CreateSlider({
+    Name = "Altura del salto",
+    Min = 50,
+    Max = 200,
+    Default = 50,
+    Callback = function(value)
+        local plr = game.Players.LocalPlayer
+        if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
+            plr.Character.Humanoid.JumpPower = value
+        end
+    end
+})
+
+ConfigTab:CreateDropdown({
+    Name = "Seleccionar color de tema",
+    Options = {"Azul", "Rojo", "Verde", "Morado"},
+    Default = "Azul",
+    Callback = function(option)
+        print("Tema seleccionado:", option)
+    end
+})
+
+-- ==============================
+-- TAB 3: VISUALES
+-- ==============================
+
+VisualTab:CreateLabel("Ajustes de Apariencia")
+
+VisualTab:CreateToggle({
+    Name = "Sombras activadas",
+    Default = true,
+    Callback = function(state)
+        if state then
+            print("Sombras ON")
+        else
+            print("Sombras OFF")
+        end
+    end
+})
+
+VisualTab:CreateButton({
+    Name = "Reiniciar ajustes visuales",
+    Callback = function()
+        print("Ajustes visuales reiniciados")
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Reinicio",
+            Text = "Visuales restaurados.",
+            Duration = 2
+        })
+    end
+})
+
+-- ==============================
+-- MENSAJE FINAL
+-- ==============================
+
+print("✅ UI cargada correctamente")
+game.StarterGui:SetCore("SendNotification", {
+    Title = "Panel Activo",
+    Text = "Tu UI se ha iniciado correctamente.",
+    Duration = 3
+})
