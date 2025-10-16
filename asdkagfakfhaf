@@ -1,165 +1,761 @@
--- DESOFUSCADOR MOONSEC V3 - VERSIÓN DEBUG
--- =========================================
+local genv = getgenv()
+local fenv = getfenv()
 
-print("🔧 Iniciando diagnóstico...")
+game:GetService("HttpService")
+local _LocalPlayer6 = game:GetService("Players").LocalPlayer
+_LocalPlayer6:FindFirstChild("leaderstats")
+local _ = fenv.appendfile
+local _ = fenv.syn
+genv.setclipboard = function(_11, _11_2, _11_3)
 
--- ⚙️ CONFIGURACIÓN
-local WEBHOOK_URL = "TU_WEBHOOK_AQUI"
-local GITHUB_RAW_URL = "https://raw.githubusercontent.com/USUARIO/REPO/main/script.lua"
+end
+genv.rconsoleprint = nil
+genv.rconsolewarn = nil
+genv.rconsoleinfo = nil
+genv.rconsolerr = nil
+genv.printidentity = nil
+genv.debug = nil
+local _call13 = game:GetService("Players")
+game:GetService("RunService")
+game:GetService("ReplicatedStorage")
+game:GetService("Lighting")
+Vector3.new(- 100, 10, - 100)
+Vector3.new(- 110, 10, - 100)
+Vector3.new(- 120, 10, - 100)
+for _28, _28_2 in _call13:GetPlayers() do
+    local _ = _28_2.UserId
+    local _ = _28_2.UserId
+    local _ = _28_2.UserId
+    local _ = _28_2.UserId
+    local _ = _28_2.UserId
+end
+local _PlayerAdded34 = _call13.PlayerAdded
+_PlayerAdded34:Connect(function(_37, _37_2, _37_3)
+    local _ = _37.UserId
+    local _ = _37.UserId
+    local _ = _37.UserId
+    local _ = _37.UserId
+    local _ = _37.UserId
+end)
+local _call50 = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk%20L%20By%20Shxryx"))().new({
+    Logo = "https://create.roblox.com/store/asset/134528145536607/Galaxy-Icon",
+    Title = "Galaxy VXI | New UI Future Updates",
+    Description = "https://discord.gg/zYrg2qPjTp",
+    Keybind = Enum.KeyCode.LeftControl,
+})
+local _call52 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Main interface",
+    Title = "Main",
+})
+local _call54 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Tool farm",
+    Title = "Farm",
+})
+local _call56 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Extra options",
+    Title = "Misc",
+})
+local _call58 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Kill multiple players",
+    Title = "Killer",
+})
+local _call60 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Crystal Pets & Auras",
+    Title = "Crystal",
+})
+local _call62 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Different places",
+    Title = "Telepor",
+})
+local _call64 = _call50:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Crédits | Discord",
+    Title = "Credits",
+})
+local _call66 = _call52:NewSection({
+    Title = "Auto Brawls",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
 
--- TEST 1: Verificar funciones básicas
-print("\n📋 TEST 1: Verificando funciones disponibles...")
-local functions_available = {
-    ["game"] = game ~= nil,
-    ["game:HttpGet"] = game and game.HttpGet ~= nil,
-    ["loadstring"] = loadstring ~= nil,
-    ["request"] = request ~= nil,
-    ["writefile"] = writefile ~= nil,
-    ["HttpService"] = pcall(function() return game:GetService("HttpService") end)
+_call66:NewToggle({
+    Title = "God Mode Brawl",
+    Default = false,
+    Callback = function(State)
+        if State then
+            task.spawn(function()
+                while State do
+                    game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
+                    task.wait(0)
+                end
+            end)
+        end
+    end,
+})
+
+_call66:NewToggle({
+    Title = "Auto Win Brawls",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoWinBrawl = bool
+        
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+
+        -- Equip Punch Tool
+        local function equipPunch()
+            if not getgenv().autoWinBrawl then return end
+            local character = player.Character
+            if not character then return false end
+            if character:FindFirstChild("Punch") then return true end
+            local backpack = player.Backpack
+            if not backpack then return false end
+            for _, tool in pairs(backpack:GetChildren()) do
+                if tool.ClassName == "Tool" and tool.Name == "Punch" then
+                    tool.Parent = character
+                    return true
+                end
+            end
+            return false
+        end
+
+        local function isValidTarget(target)
+            if not target or not target.Parent then return false end
+            if target == player then return false end
+            local character = target.Character
+            if not character then return false end
+            local humanoid = character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return false end
+            if humanoid:GetState() == Enum.HumanoidStateType.Dead then return false end
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if not root then return false end
+            return true
+        end
+
+        local function isLocalReady()
+            local char = player.Character
+            if not char then return false end
+            local hum = char:FindFirstChild("Humanoid")
+            if not hum or hum.Health <= 0 then return false end
+            return (char:FindFirstChild("LeftHand") or char:FindFirstChild("RightHand"))
+        end
+
+        local function safeTouch(target, localPart)
+            if not target or not localPart then return end
+            pcall(function()
+                firetouchinterest(target, localPart, 0)
+                task.wait(0.01)
+                firetouchinterest(target, localPart, 1)
+            end)
+        end
+
+        -- Join brawl automatically
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.5) do
+                if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                    game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                    player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                end
+            end
+        end)
+
+        -- Keep punch equipped
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.5) do
+                equipPunch()
+            end
+        end)
+
+        -- Punch constantly
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.1) do
+                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
+                    pcall(function() player.muscleEvent:FireServer("punch", "rightHand") end)
+                    pcall(function() player.muscleEvent:FireServer("punch", "leftHand") end)
+                end
+            end
+        end)
+
+        -- Attack others
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.05) do
+                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
+                    local char = player.Character
+                    local left, right = char:FindFirstChild("LeftHand"), char:FindFirstChild("RightHand")
+                    for _, target in pairs(Players:GetPlayers()) do
+                        if not getgenv().autoWinBrawl then break end
+                        pcall(function()
+                            if isValidTarget(target) then
+                                local root = target.Character:FindFirstChild("HumanoidRootPart")
+                                if left then safeTouch(root, left) end
+                                if right then safeTouch(root, right) end
+                            end
+                        end)
+                        task.wait(0.01)
+                    end
+                end
+            end
+        end)
+
+        -- Recovery system
+        task.spawn(function()
+            local lastCount, stuck = 0, 0
+            while getgenv().autoWinBrawl and task.wait(1) do
+                local current = #Players:GetPlayers()
+                if current ~= lastCount then
+                    stuck = 0
+                    lastCount = current
+                else
+                    stuck += 1
+                    if stuck > 5 then
+                        stuck = 0
+                        pcall(function()
+                            local char = player.Character
+                            if char and char:FindFirstChild("Punch") then
+                                char.Punch.Parent = player.Backpack
+                                task.wait(0.1)
+                                equipPunch()
+                            else
+                                equipPunch()
+                            end
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+_call66:NewToggle({
+    Title = "Auto Join Brawls",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoJoinBrawl = bool
+        if bool then
+            task.spawn(function()
+                while getgenv().autoJoinBrawl and task.wait(0.5) do
+                    if not getgenv().autoJoinBrawl then break end
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                            game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                            player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+
+local _call700 = _call52:NewSection({
+    Title = "Auto Jungle Gym",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+-- Cache services for faster access
+local VIM = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Helper functions for Jungle Gym
+local function pressE()
+    VIM:SendKeyEvent(true, "E", false, game)
+    task.wait(0.1)
+    VIM:SendKeyEvent(false, "E", false, game)
+end
+
+local function autoLift()
+    while getgenv().working do
+        LocalPlayer.muscleEvent:FireServer("rep")
+        task.wait()
+    end
+end
+
+local function teleportAndStart(machineName, position)
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = position
+        task.wait(0.1)
+        pressE()
+        task.spawn(autoLift)
+    end
+end
+
+-- 🌴 Jungle Gym Bench Press
+_call700:NewToggle({
+    Title = "Jungle Bench Press",
+    Default = false,
+    Callback = function(bool)
+        if getgenv().working and not bool then
+            getgenv().working = false
+            return
+        end
+        getgenv().working = bool
+        if bool then
+            teleportAndStart("Bench Press", CFrame.new(-8173, 64, 1898))
+        end
+    end,
+})
+
+-- 🏋️ Jungle Gym Squat
+_call700:NewToggle({
+    Title = "Jungle Squat",
+    Default = false,
+    Callback = function(bool)
+        if getgenv().working and not bool then
+            getgenv().working = false
+            return
+        end
+        getgenv().working = bool
+        if bool then
+            teleportAndStart("Squat", CFrame.new(-8352, 34, 2878))
+        end
+    end,
+})
+
+-- 💪 Jungle Gym Pull Ups
+_call700:NewToggle({
+    Title = "Jungle Pull Ups",
+    Default = false,
+    Callback = function(bool)
+        if getgenv().working and not bool then
+            getgenv().working = false
+            return
+        end
+        getgenv().working = bool
+        if bool then
+            teleportAndStart("Pull Up", CFrame.new(-8666, 34, 2070))
+        end
+    end,
+})
+
+-- 🪨 Jungle Gym Boulder
+_call700:NewToggle({
+    Title = "Jungle Boulder",
+    Default = false,
+    Callback = function(bool)
+        if getgenv().working and not bool then
+            getgenv().working = false
+            return
+        end
+        getgenv().working = bool
+        if bool then
+            teleportAndStart("Boulder", CFrame.new(-8621, 34, 2684))
+        end
+    end,
+})
+
+
+local _call1038 = _call52:NewSection({
+    Title = "Rebirths",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+-- 🔹 Datos de posiciones de entrenamiento
+local workoutPositions = {
+    ["Bench Press"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4111.91748, 1020.46674, -3799.97217),
+        ["Muscle King Gym"] = CFrame.new(-8590.06152, 46.0167427, -6043.34717)
+    },
+    ["Squat"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
+        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
+    },
+    ["Deadlift"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
+        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
+    },
+    ["Pull Up"] = {
+        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
+        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
+        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
+    }
 }
 
-for name, available in pairs(functions_available) do
-    print(string.format("  %s %s", available and "✅" or "❌", name))
+-- 🔹 Tipos de entrenamiento
+local workoutTypes = {
+    "Bench Press",
+    "Squat",
+    "Deadlift",
+    "Pull Up"
+}
+
+-- 🔹 Gimnasios disponibles
+local gymLocations = {
+    "Eternal Gym",
+    "Legend Gym",
+    "Muscle King Gym"
+}
+
+-- 🔹 Traducciones
+local workoutTranslations = {
+    ["Bench Press"] = "Bench Press",
+    ["Squat"] = "Squat",
+    ["Deadlift"] = "Dead Lift",
+    ["Pull Up"] = "Pull Up"
+}
+
+-- 🔹 Referencias a los toggles
+local gymToggles = {}
+
+-- 🔹 Funciones auxiliares
+local VIM = game:GetService("VirtualInputManager")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function pressE()
+    VIM:SendKeyEvent(true, "E", false, game)
+    task.wait(0.1)
+    VIM:SendKeyEvent(false, "E", false, game)
 end
 
--- Si falta algo crítico, parar aquí
-if not game or not loadstring then
-    warn("❌ ERROR CRÍTICO: Funciones básicas no disponibles")
-    return
-end
-
-print("\n✅ Funciones básicas OK")
-
--- TEST 2: Verificar descarga
-print("\n📋 TEST 2: Probando descarga de GitHub...")
-
-local download_success, downloaded_code = pcall(function()
-    return game:HttpGet(GITHUB_RAW_URL, true)
-end)
-
-if not download_success then
-    warn("❌ ERROR descargando:", downloaded_code)
-    warn("💡 Posibles causas:")
-    warn("   • Link incorrecto")
-    warn("   • Repo privado")
-    warn("   • Sin conexión")
-    return
-end
-
-print("✅ Descarga OK:", #downloaded_code, "bytes")
-
--- TEST 3: Verificar que el código no esté vacío
-if #downloaded_code < 100 then
-    warn("⚠️ Código muy pequeño, puede estar mal")
-    print("Contenido:", downloaded_code:sub(1, 200))
-    return
-end
-
-print("✅ Tamaño de código válido")
-
--- Captura simple
-local captured_code = nil
-
--- Hook básico de loadstring
-local original_loadstring = loadstring
-loadstring = function(code, ...)
-    print("🔔 loadstring llamado, tamaño:", #code)
-    
-    -- Si NO es MoonSec, guardarlo
-    if not code:find("MoonSec") and #code > 100 then
-        print("✅ Código limpio detectado!")
-        captured_code = code
+local function autoLift()
+    while getgenv().workingGym do
+        LocalPlayer.muscleEvent:FireServer("rep")
+        task.wait()
     end
-    
-    return original_loadstring(code, ...)
 end
 
--- TEST 4: Ejecutar código
-print("\n📋 TEST 4: Ejecutando código ofuscado...")
-print("⏳ Espera 3 segundos...")
-
-local exec_success, exec_error = pcall(function()
-    local func = loadstring(downloaded_code)
-    if func then
-        func()
-    else
-        error("loadstring retornó nil")
+local function teleportAndStart(machineName, position)
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = position
+        task.wait(0.1)
+        pressE()
+        task.spawn(autoLift)
     end
-end)
-
-if not exec_success then
-    warn("⚠️ Error al ejecutar:", exec_error)
-    print("💡 Esto puede ser normal si el código necesita un entorno específico")
 end
 
--- Esperar captura
-wait(3)
+-- 🔹 Crear dropdowns y toggles dinámicamente
+for _, workoutType in ipairs(workoutTypes) do
+    local spanishWorkoutName = workoutTranslations[workoutType]
 
--- TEST 5: Verificar captura
-print("\n📋 TEST 5: Verificando captura...")
+    -- 🧭 Dropdown de gimnasio
+    _call1038:NewDropdown({
+        Title = spanishWorkoutName .. " - Gimnasio",
+        Options = gymLocations,
+        Callback = function(selected)
+            _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] = selected
+        end,
+    })
 
-if captured_code then
-    print("✅ ¡CÓDIGO CAPTURADO!")
-    print("Tamaño:", #captured_code, "bytes")
-    print("Primeros 200 caracteres:")
-    print(captured_code:sub(1, 200))
-    
-    -- Guardar
-    if writefile then
-        local filename = "captured_" .. os.time() .. ".lua"
-        writefile(filename, captured_code)
-        print("💾 Guardado en:", filename)
-    end
-    
-    -- Intentar enviar a Discord
-    if WEBHOOK_URL ~= "TU_WEBHOOK_AQUI" then
-        print("\n📤 Intentando enviar a Discord...")
-        
-        local webhook_success = pcall(function()
-            local preview = captured_code:sub(1, 3900)
-            local payload = game:GetService("HttpService"):JSONEncode({
-                content = "**Código Capturado (" .. #captured_code .. " bytes)**\n```lua\n" .. preview .. "\n```"
-            })
-            
-            request({
-                Url = WEBHOOK_URL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = payload
-            })
-        end)
-        
-        if webhook_success then
-            print("✅ Enviado a Discord")
+    -- 💪 Toggle del entrenamiento
+    _call1038:NewToggle({
+        Title = spanishWorkoutName,
+        Default = false,
+        Callback = function(bool)
+            getgenv().workingGym = bool
+            getgenv().currentWorkoutType = workoutType
+
+            if bool then
+                local selectedGym = _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] or gymLocations[1]
+
+                if workoutPositions[workoutType] and workoutPositions[workoutType][selectedGym] then
+                    -- Apagar otros toggles
+                    for otherType, otherToggle in pairs(gymToggles) do
+                        if otherType ~= workoutType and otherToggle then
+                            otherToggle:Set(false)
+                        end
+                    end
+                    -- Empezar entrenamiento
+                    teleportAndStart(workoutType, workoutPositions[workoutType][selectedGym])
+                else
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "Error",
+                        Text = "No se encontró posición para " .. workoutType .. " en " .. selectedGym,
+                        Duration = 5
+                    })
+                end
+            else
+                getgenv().workingGym = false
+            end
+        end,
+    })
+end
+
+local _call1038 = _call52:NewSection({
+    Title = "OP Things / Farms",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+-- 📁 OP Things/Farms (versión adaptada a _call1038)
+
+-- 🧍‍♂️ Lock Position
+_call1038:NewSwitch({
+    Title = "Lock Position",
+    Callback = function(Value)
+        if Value then
+            local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+            getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
+                if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
+                end
+            end)
         else
-            warn("❌ No se pudo enviar a Discord")
+            if getgenv().posLock then
+                getgenv().posLock:Disconnect()
+                getgenv().posLock = nil
+            end
         end
-    else
-        print("⚠️ Webhook no configurado")
     end
-    
-else
-    print("❌ NO SE CAPTURÓ CÓDIGO")
-    print("\n💡 Esto significa que MoonSec V3:")
-    print("   • No usa loadstring() para código limpio")
-    print("   • Ejecuta bytecode directamente en su VM")
-    print("   • Necesita métodos más avanzados")
-    
-    print("\n📝 Alternativas:")
-    print("   1. Usar un decompiler de bytecode Lua")
-    print("   2. Analizar con IDA Pro + plugins")
-    print("   3. Hacer ingeniería inversa manual")
-    print("   4. Contactar al autor original")
+})
+
+-- 💥 Anti Knockback
+_call1038:NewSwitch({
+    Title = "Anti Knockback",
+    Callback = function(Value)
+        local playerName = game.Players.LocalPlayer.Name
+        local rootPart = game.Workspace:FindFirstChild(playerName):FindFirstChild("HumanoidRootPart")
+        
+        if Value then
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.P = 1250
+            bodyVelocity.Parent = rootPart
+        else
+            local existingVelocity = rootPart:FindFirstChild("BodyVelocity")
+            if existingVelocity and existingVelocity.MaxForce == Vector3.new(100000, 0, 100000) then
+                existingVelocity:Destroy()
+            end
+        end
+    end
+})
+
+-- 🧹 Delete All Frames
+_call1038:NewSwitch({
+    Title = "Delete All Frames",
+    Callback = function(state)
+        local rSto = game:GetService("ReplicatedStorage")
+        for _, obj in pairs(rSto:GetChildren()) do
+            if obj.Name:match("Frame$") and obj:IsA("GuiObject") then
+                if state then
+                    obj:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- 🚀 Anti-Lag
+local antiLagActive = false
+local function optimizeGame()
+    local Lighting = game:GetService("Lighting")
+    local Terrain = workspace:FindFirstChildOfClass("Terrain")
+
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 999999
+    Lighting.Brightness = 1
+    Lighting.EnvironmentDiffuseScale = 0
+    Lighting.EnvironmentSpecularScale = 0
+    Lighting.Technology = Enum.Technology.Compatibility
+
+    if Terrain then
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterReflectance = 0
+        Terrain.WaterTransparency = 1
+    end
+
+    workspace.StreamingEnabled = true
+    workspace.StreamingTargetRadius = 100
+    workspace.InterpolationThrottling = Enum.InterpolationThrottlingMode.Enabled
+    settings().Rendering.QualityLevel = "Level01"
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
+            obj.Enabled = false
+        elseif obj:IsA("BasePart") and obj.Reflectance > 0 then
+            obj.Reflectance = 0
+        end
+    end
 end
 
-print("\n" .. string.rep("=", 50))
-print("🏁 DIAGNÓSTICO COMPLETADO")
-print(string.rep("=", 50))
+local function activateAntiLag()
+    if antiLagActive then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Sherya Script",
+            Text = "⚙️ Anti-Lag ya está activo.",
+            Duration = 4
+        })
+        return
+    end
 
--- Mostrar resumen
-print("\nRESUMEN:")
-print("• Descarga: " .. (download_success and "✅" or "❌"))
-print("• Ejecución: " .. (exec_success and "✅" or "⚠️"))
-print("• Captura: " .. (captured_code and "✅" or "❌"))
-print("\n💡 Si no capturó código, MoonSec V3 es demasiado")
-print("   protegido para desofuscar con este método.")
+    antiLagActive = true
+    optimizeGame()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Sherya Script",
+        Text = "🚀 Anti-Lag activado con éxito!",
+        Duration = 5
+    })
+end
+
+_call1038:NewButton({
+    Title = "Anti-Lag",
+    Callback = function()
+        activateAntiLag()
+    end
+})
+
+-- 💤 Anti-AFK con GUI
+local antiAFKActive = false
+local antiAFKConnection = nil
+local sessionStartTime = tick()
+local sheryaGUI = nil
+
+local function createSheryaGUI()
+    if sheryaGUI then
+        sheryaGUI:Destroy()
+        sheryaGUI = nil
+    end
+
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local Stats = game:GetService("Stats")
+    local player = Players.LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+
+    sheryaGUI = Instance.new("ScreenGui")
+    sheryaGUI.Name = "SheryaScript"
+    sheryaGUI.Parent = playerGui
+    sheryaGUI.ResetOnSpawn = false
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Parent = sheryaGUI
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    mainFrame.BorderSizePixel = 2
+    mainFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.Position = UDim2.new(0, 15, 0, 15)
+    mainFrame.Size = UDim2.new(0, 200, 0, 100)
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Parent = mainFrame
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Size = UDim2.new(1, 0, 0, 22)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Text = "Galaxy XVI"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextScaled = true
+
+    local pingLabel = Instance.new("TextLabel")
+    pingLabel.Parent = mainFrame
+    pingLabel.BackgroundTransparency = 1
+    pingLabel.Position = UDim2.new(0, 5, 0, 25)
+    pingLabel.Size = UDim2.new(1, -10, 0, 18)
+    pingLabel.Font = Enum.Font.Gotham
+    pingLabel.Text = "Ping: 0 ms"
+    pingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    pingLabel.TextScaled = true
+    pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local fpsLabel = pingLabel:Clone()
+    fpsLabel.Name = "FPS"
+    fpsLabel.Position = UDim2.new(0, 5, 0, 45)
+    fpsLabel.Text = "FPS: 0"
+    fpsLabel.Parent = mainFrame
+
+    local sessionLabel = pingLabel:Clone()
+    sessionLabel.Name = "Session"
+    sessionLabel.Position = UDim2.new(0, 5, 0, 65)
+    sessionLabel.Text = "Session: 00:00:00"
+    sessionLabel.Parent = mainFrame
+
+    local statusLabel = pingLabel:Clone()
+    statusLabel.Name = "Status"
+    statusLabel.Position = UDim2.new(0, 5, 0, 83)
+    statusLabel.Text = "Anti-AFK Activo"
+    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    statusLabel.Parent = mainFrame
+
+    local frameCount, lastTime, currentFPS = 0, tick(), 0
+    local function formatTime(seconds)
+        local h = math.floor(seconds / 3600)
+        local m = math.floor((seconds % 3600) / 60)
+        local s = math.floor(seconds % 60)
+        return string.format("%02d:%02d:%02d", h, m, s)
+    end
+
+    local RunService = game:GetService("RunService")
+    RunService.Heartbeat:Connect(function()
+        frameCount += 1
+        local now = tick()
+        if now - lastTime >= 1 then
+            currentFPS = frameCount
+            frameCount, lastTime = 0, now
+        end
+        local ping = math.round(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        local sessionTime = tick() - sessionStartTime
+        pingLabel.Text = "Ping: " .. ping .. " ms"
+        fpsLabel.Text = "FPS: " .. currentFPS
+        sessionLabel.Text = "Session: " .. formatTime(sessionTime)
+    end)
+end
+
+local function startAntiAFK()
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+    end
+    
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    antiAFKConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if humanoid and humanoid.Parent then
+            local t = tick()
+            humanoid:Move(Vector3.new(math.sin(t * 0.1) * 0.01, 0, 0), false)
+        end
+    end)
+end
+
+local function stopAntiAFK()
+    if antiAFKConnection then
+        antiAFKConnection:Disconnect()
+        antiAFKConnection = nil
+    end
+    if sheryaGUI then
+        sheryaGUI:Destroy()
+        sheryaGUI = nil
+    end
+end
+
+_call1038:NewButton({
+    Title = "Anti AFK GUI",
+    Callback = function()
+        if not antiAFKActive then
+            antiAFKActive = true
+            sessionStartTime = tick()
+            createSheryaGUI()
+            startAntiAFK()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Sherya Script",
+                Text = "Anti-AFK activado! GUI visible.",
+                Duration = 5
+            })
+        else
+            antiAFKActive = false
+            stopAntiAFK()
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Sherya Script",
+                Text = "Anti-AFK desactivado! GUI cerrada.",
+                Duration = 5
+            })
+        end
+    end
+})
