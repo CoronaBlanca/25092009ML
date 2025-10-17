@@ -539,54 +539,87 @@ _call14:NewToggle({
     end
 })
 
--- 🔹 Botón 1: Anti-AFK simple
 _call14:NewButton({
     Title = "Anti AFK",
     Callback = function()
         local Players = game:GetService("Players")
         local LocalPlayer = Players.LocalPlayer
+
+        -- Si ya está activo, desconecta
         if getgenv().antiAFKConnection then
             getgenv().antiAFKConnection:Disconnect()
             getgenv().antiAFKConnection = nil
             return
         end
 
+        -- Conectar Anti-AFK ligero
         getgenv().antiAFKConnection = LocalPlayer.Idled:Connect(function()
-            -- Mover el mouse o presionar tecla virtual
             local VirtualUser = game:GetService("VirtualUser")
+            -- Simular solo un click pequeño, suficiente para reiniciar AFK
             VirtualUser:ClickButton1(Vector2.new())
         end)
     end,
 })
 
--- 🔹 Botón 2: Anti-AFK con GUI
 _call14:NewButton({
-    Title = "Anti AFK GUI",
+    Title = "Anti-AFK GUI",
     Callback = function()
         local Players = game:GetService("Players")
         local LocalPlayer = Players.LocalPlayer
         local RunService = game:GetService("RunService")
-        local StarterGui = game:GetService("StarterGui")
 
-        -- Crear GUI si no existe
+        -- Si ya existe, desconectamos y eliminamos
+        if getgenv().antiAFKGUIConnection then
+            getgenv().antiAFKGUIConnection:Disconnect()
+            getgenv().antiAFKGUIConnection = nil
+            if game.CoreGui:FindFirstChild("AntiAFK_GUI") then
+                game.CoreGui:FindFirstChild("AntiAFK_GUI"):Destroy()
+            end
+            return
+        end
+
+        -- Crear GUI
         local screenGui = Instance.new("ScreenGui")
         screenGui.Name = "AntiAFK_GUI"
+        screenGui.ResetOnSpawn = false
         screenGui.Parent = game.CoreGui
 
         local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 200, 0, 100)
-        frame.Position = UDim2.new(0, 20, 0, 20)
-        frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        frame.Size = UDim2.new(0, 220, 0, 120)
+        frame.Position = UDim2.new(0, 50, 0, 50)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BorderSizePixel = 2
+        frame.BorderColor3 = Color3.fromRGB(25, 25, 25)
         frame.Parent = screenGui
 
+        -- Hacer draggable
+        frame.Active = true
+        frame.Draggable = true
+
+        -- Título
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 30)
+        title.Position = UDim2.new(0, 0, 0, 0)
+        title.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        title.BorderSizePixel = 2
+        title.BorderColor3 = Color3.fromRGB(25, 25, 25)
+        title.Text = "Galaxy XVI"
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.TextScaled = true
+        title.TextWrapped = true
+        title.Font = Enum.Font.SourceSansBold
+        title.Parent = frame
+
+        -- Información
         local infoLabel = Instance.new("TextLabel")
-        infoLabel.Size = UDim2.new(1, -10, 1, -10)
-        infoLabel.Position = UDim2.new(0, 5, 0, 5)
+        infoLabel.Size = UDim2.new(1, -10, 1, -40)
+        infoLabel.Position = UDim2.new(0, 5, 0, 35)
         infoLabel.BackgroundTransparency = 1
-        infoLabel.TextColor3 = Color3.new(1, 1, 1)
+        infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         infoLabel.TextScaled = true
         infoLabel.TextWrapped = true
-        infoLabel.Text = "Anti AFK Activo"
+        infoLabel.Text = "Anti-AFK Activo"
+        infoLabel.Font = Enum.Font.SourceSans
         infoLabel.Parent = frame
 
         -- Variables de sesión
@@ -594,15 +627,8 @@ _call14:NewButton({
         local fps = 0
 
         -- Conectar Anti-AFK y actualizar GUI
-        if getgenv().antiAFKGUIConnection then
-            getgenv().antiAFKGUIConnection:Disconnect()
-            getgenv().antiAFKGUIConnection = nil
-            screenGui:Destroy()
-            return
-        end
-
         getgenv().antiAFKGUIConnection = RunService.RenderStepped:Connect(function(deltaTime)
-            fps = 1 / deltaTime
+            fps = math.floor(1 / deltaTime)
             local sessionTime = tick() - startTime
             local minutes = math.floor(sessionTime / 60)
             local seconds = math.floor(sessionTime % 60)
@@ -615,3 +641,397 @@ _call14:NewButton({
         end)
     end,
 })
+
+local _call21 = _call20:NewSection({
+    Title = "Auto Rocks",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+local function createAutoRockToggle(rockName, minDurability, displayName)
+    _call21:NewToggle({
+        Title = displayName or rockName,
+        Default = false,
+        Callback = function(Value)
+            getgenv().autoFarm = Value
+
+            task.spawn(function()
+                while getgenv().autoFarm do
+                    task.wait()
+                    if not getgenv().autoFarm then break end
+
+                    local player = game.Players.LocalPlayer
+                    local char = player.Character
+                    local durability = player:FindFirstChild("Durability")
+                    if durability and durability.Value >= minDurability and char and char:FindFirstChild("LeftHand") and char:FindFirstChild("RightHand") then
+                        for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
+                            if v.Name == "neededDurability" and v.Value == minDurability then
+                                firetouchinterest(v.Parent.Rock, char.RightHand, 0)
+                                firetouchinterest(v.Parent.Rock, char.RightHand, 1)
+                                firetouchinterest(v.Parent.Rock, char.LeftHand, 0)
+                                firetouchinterest(v.Parent.Rock, char.LeftHand, 1)
+
+                                -- Equipar la herramienta y disparar el evento
+                                for _, tool in pairs(player.Backpack:GetChildren()) do
+                                    if tool.Name == "Punch" and char:FindFirstChild("Humanoid") then
+                                        char.Humanoid:EquipTool(tool)
+                                    end
+                                end
+                                player.muscleEvent:FireServer("punch", "leftHand")
+                                player.muscleEvent:FireServer("punch", "rightHand")
+                            end
+                        end
+                    end
+                end
+            end)
+        end,
+    })
+end
+
+-- 🔹 Crear los toggles automáticamente
+createAutoRockToggle("Tiny Island Rock", 0, "Tiny Rock")
+createAutoRockToggle("Starter Island Rock", 100, "Starter Rock")
+createAutoRockToggle("Legend Beach Rock", 5000, "Legend Beach Rock")
+createAutoRockToggle("Frost Gym Rock", 150000, "Frozen Rock")
+createAutoRockToggle("Mythical Gym Rock", 400000, "Mythical Rock")
+createAutoRockToggle("Eternal Gym Rock", 750000, "Eternal Rock")
+createAutoRockToggle("Legend Gym Rock", 1000000, "Legend Rock")
+createAutoRockToggle("Muscle King Gym Rock", 5000000, "Muscle King Rock")
+createAutoRockToggle("Ancient Jungle Rock", 10000000, "Jungle Rock")
+
+local _call22 = _call20:NewSection({
+    Title = "Auto Tools",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+-- 🔹 Botón Gamepass AutoLift
+_call22:NewButton({
+    Title = "Gamepass AutoLift",
+    Callback = function()
+        local gamepassFolder = game:GetService("ReplicatedStorage").gamepassIds
+        local player = game:GetService("Players").LocalPlayer
+        for _, gamepass in pairs(gamepassFolder:GetChildren()) do
+            local value = Instance.new("IntValue")
+            value.Name = gamepass.Name
+            value.Value = gamepass.Value
+            value.Parent = player.ownedGamepasses
+        end
+    end,
+    Description = "Desbloquea el gamepass de AutoLift gratis"
+})
+
+-- 🔹 Función genérica para toggles de ejercicios
+local function createExerciseToggle(toolName, toggleTitle, repProperty)
+    _call22:NewToggle({
+        Title = toggleTitle,
+        Default = false,
+        Callback = function(Value)
+            _G[toggleTitle:gsub("%s", "")] = Value
+            local player = game.Players.LocalPlayer
+            local char = player.Character
+            local backpack = player.Backpack
+
+            -- Equipar o devolver herramienta
+            if Value then
+                local tool = backpack:FindFirstChild(toolName)
+                if tool and char:FindFirstChild("Humanoid") then
+                    char.Humanoid:EquipTool(tool)
+                end
+            else
+                local equipped = char:FindFirstChild(toolName)
+                if equipped then
+                    equipped.Parent = backpack
+                end
+            end
+
+            -- Auto repetir acción
+            task.spawn(function()
+                while _G[toggleTitle:gsub("%s", "")] do
+                    if not _G[toggleTitle:gsub("%s", "")] then break end
+                    player.muscleEvent:FireServer(repProperty or "rep")
+                    task.wait(0.1)
+                end
+            end)
+        end,
+        Description = "Activa " .. toggleTitle .. " automáticamente"
+    })
+end
+
+-- 🔹 Crear toggles de ejercicios
+createExerciseToggle("Weight", "Auto Weight")
+createExerciseToggle("Pushups", "Auto Pushups")
+createExerciseToggle("Handstands", "Auto Handstands")
+createExerciseToggle("Situps", "Auto Situps")
+
+-- 🔹 Toggle Auto Punch
+_call22:NewToggle({
+    Title = "Auto Punch",
+    Default = false,
+    Callback = function(Value)
+        _G.fastHitActive = Value
+        local player = game.Players.LocalPlayer
+
+        if Value then
+            -- Equipar Punch y ajustar attackTime
+            task.spawn(function()
+                while _G.fastHitActive do
+                    if not _G.fastHitActive then break end
+                    local punch = player.Backpack:FindFirstChild("Punch")
+                    if punch then
+                        punch.Parent = player.Character
+                        if punch:FindFirstChild("attackTime") then
+                            punch.attackTime.Value = 0
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+
+            -- Golpear rápido
+            task.spawn(function()
+                while _G.fastHitActive do
+                    if not _G.fastHitActive then break end
+                    player.muscleEvent:FireServer("punch", "rightHand")
+                    player.muscleEvent:FireServer("punch", "leftHand")
+                    local punchTool = player.Character and player.Character:FindFirstChild("Punch")
+                    if punchTool then
+                        punchTool:Activate()
+                    end
+                    task.wait(0)
+                end
+            end)
+        else
+            local equipped = player.Character:FindFirstChild("Punch")
+            if equipped then
+                equipped.Parent = player.Backpack
+            end
+        end
+    end,
+    Description = "Golpea automáticamente"
+})
+
+-- 🔹 Toggle Fast Tools
+_call22:NewToggle({
+    Title = "Fast Tools",
+    Default = false,
+    Callback = function(Value)
+        _G.FastTools = Value
+        local player = game.Players.LocalPlayer
+        local backpack = player:WaitForChild("Backpack")
+
+        local defaultSpeeds = {
+            {"Punch", "attackTime", Value and 0 or 0.35},
+            {"Ground Slam", "attackTime", Value and 0 or 6},
+            {"Stomp", "attackTime", Value and 0 or 7},
+            {"Handstands", "repTime", Value and 0 or 1},
+            {"Pushups", "repTime", Value and 0 or 1},
+            {"Weight", "repTime", Value and 0 or 1},
+            {"Situps", "repTime", Value and 0 or 1}
+        }
+
+        for _, toolInfo in ipairs(defaultSpeeds) do
+            local tool = backpack:FindFirstChild(toolInfo[1])
+            if tool and tool:FindFirstChild(toolInfo[2]) then
+                tool[toolInfo[2]].Value = toolInfo[3]
+            end
+
+            local equippedTool = player.Character and player.Character:FindFirstChild(toolInfo[1])
+            if equippedTool and equippedTool:FindFirstChild(toolInfo[2]) then
+                equippedTool[toolInfo[2]].Value = toolInfo[3]
+            end
+        end
+    end,
+    Description = "Acelera todas las herramientas"
+})
+
+local _call23 = _call20:NewSection({
+    Title = "Auto Rebirths",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+-- 🔹 Rebirth Target Input
+_call23:NewTextBox({
+    Title = "Rebirth Target",
+    Callback = function(text)
+        local newValue = tonumber(text)
+        if newValue and newValue > 0 then
+            targetRebirthValue = newValue
+            updateStats() -- Actualizar estadísticas
+            
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Objetivo Actualizado",
+                Text = "Nuevo objetivo: " .. tostring(targetRebirthValue) .. " renacimientos",
+                Duration = 0
+            })
+        else
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "Entrada Inválida",
+                Text = "Por favor ingresa un número válido mayor que 0",
+                Duration = 0
+            })
+        end
+    end
+})
+
+-- 🔹 Auto Rebirth Toggles
+local infiniteSwitch
+local targetSwitch
+
+targetSwitch = _call23:NewToggle({
+    Title = "Auto Rebirth Target",
+    Default = false,
+    Callback = function(bool)
+        _G.targetRebirthActive = bool
+
+        if bool then
+            if _G.infiniteRebirthActive and infiniteSwitch then
+                infiniteSwitch:Set(false)
+                _G.infiniteRebirthActive = false
+            end
+
+            spawn(function()
+                while _G.targetRebirthActive and wait(0.1) do
+                    local currentRebirths = game.Players.LocalPlayer.leaderstats.Rebirths.Value
+                    if currentRebirths >= targetRebirthValue then
+                        targetSwitch:Set(false)
+                        _G.targetRebirthActive = false
+
+                        game:GetService("StarterGui"):SetCore("SendNotification", {
+                            Title = "¡Objetivo Alcanzado!",
+                            Text = "Has alcanzado " .. tostring(targetRebirthValue) .. " renacimientos",
+                            Duration = 5
+                        })
+                        break
+                    end
+                    game:GetService("ReplicatedStorage").rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+                end
+            end)
+        end
+    end,
+    Description = "Renacimiento automático hasta alcanzar el objetivo"
+})
+
+infiniteSwitch = _call23:NewToggle({
+    Title = "Auto Rebirth (Infinite)",
+    Default = false,
+    Callback = function(bool)
+        _G.infiniteRebirthActive = bool
+
+        if bool then
+            if _G.targetRebirthActive and targetSwitch then
+                targetSwitch:Set(false)
+                _G.targetRebirthActive = false
+            end
+
+            spawn(function()
+                while _G.infiniteRebirthActive and wait(0.1) do
+                    game:GetService("ReplicatedStorage").rEvents.rebirthRemote:InvokeServer("rebirthRequest")
+                end
+            end)
+        end
+    end,
+    Description = "Renacimiento continuo sin parar"
+})
+
+-- 🔹 Auto Size Toggle
+_call23:NewToggle({
+    Title = "Auto Size 1",
+    Default = false,
+    Callback = function(bool)
+        _G.autoSizeActive = bool
+        local player = game.Players.LocalPlayer
+
+        if bool then
+            spawn(function()
+                while _G.autoSizeActive and wait() do
+                    game:GetService("ReplicatedStorage").rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", 1)
+                end
+            end)
+        end
+    end,
+    Description = "Establece el tamaño del personaje a 1 continuamente"
+})
+
+-- 🔹 Auto Teleport Toggle
+_call23:NewToggle({
+    Title = "Auto Teleport to Muscle King",
+    Default = false,
+    Callback = function(bool)
+        _G.teleportActive = bool
+        local player = game.Players.LocalPlayer
+
+        if bool then
+            spawn(function()
+                while _G.teleportActive and wait() do
+                    if player.Character then
+                        player.Character:MoveTo(Vector3.new(-8646, 17, -5738))
+                    end
+                end
+            end)
+        end
+    end,
+    Description = "Teletransporte continuo al Rey Músculo"
+})
+
+-- 🔹 Funciones auxiliares para Auto Tools combinados
+local function equipToolFast(player, toolName, repName, repValue)
+    local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
+    if tool and player.Character and player.Character:FindFirstChild("Humanoid") then
+        tool.Parent = player.Character
+        if repName and tool:FindFirstChild(repName) then
+            tool[repName].Value = repValue
+        end
+    end
+end
+
+local function fastPunch(player)
+    local punch = player.Backpack:FindFirstChild("Punch") or player.Character:FindFirstChild("Punch")
+    if punch then
+        punch.Parent = player.Character
+        if punch:FindFirstChild("attackTime") then punch.attackTime.Value = 0 end
+        player.muscleEvent:FireServer("punch", "rightHand")
+        player.muscleEvent:FireServer("punch", "leftHand")
+        local punchTool = player.Character and player.Character:FindFirstChild("Punch")
+        if punchTool then punchTool:Activate() end
+    end
+end
+
+-- 🔹 Auto Tools Combinados Toggles
+local combos = {
+    {"Auto Weight + Punch", "Weight", "repTime", 0, "Punch"},
+    {"Auto Pushups + Punch", "Pushups", "repTime", 0, "Punch"},
+    {"Auto Situps + Punch", "Situps", "repTime", 0, "Punch"},
+    {"Auto Handstands + Punch", "Handstands", "repTime", 0, "Punch"}
+}
+
+for _, combo in ipairs(combos) do
+    local title, tool, repName, repValue, punchTool = unpack(combo)
+    _call23:NewToggle({
+        Title = title,
+        Default = false,
+        Callback = function(Value)
+            _G[title:gsub("%s", "")] = Value
+            local player = game.Players.LocalPlayer
+
+            if Value then
+                task.spawn(function()
+                    while _G[title:gsub("%s", "")] do
+                        equipToolFast(player, tool, repName, repValue)
+                        player.muscleEvent:FireServer("rep")
+                        fastPunch(player)
+                        task.wait()
+                    end
+                end)
+            else
+                local char = player.Character
+                for _, t in ipairs({tool, punchTool}) do
+                    local eq = char:FindFirstChild(t)
+                    if eq then eq.Parent = player.Backpack end
+                end
+            end
+        end,
+        Description = "Automatiza " .. title
+    })
+end
