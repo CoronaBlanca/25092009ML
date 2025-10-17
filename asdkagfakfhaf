@@ -1,90 +1,67 @@
-local genv = getgenv()
-local fenv = getfenv()
+-- Servicios útiles
+local Players = game:GetService("Players")
 
-game:GetService("HttpService")
-local _LocalPlayer6 = game:GetService("Players").LocalPlayer
-_LocalPlayer6:FindFirstChild("leaderstats")
-local _ = fenv.appendfile
-local _ = fenv.syn
-genv.setclipboard = function(_11, _11_2, _11_3)
+-- Jugador local (por si la UI lo usa internamente)
+local LocalPlayer = Players.LocalPlayer
+if LocalPlayer then
+    LocalPlayer:FindFirstChild("leaderstats")
+end
 
-end
-genv.rconsoleprint = nil
-genv.rconsolewarn = nil
-genv.rconsoleinfo = nil
-genv.rconsolerr = nil
-genv.printidentity = nil
-genv.debug = nil
-local _call13 = game:GetService("Players")
-game:GetService("RunService")
-game:GetService("ReplicatedStorage")
-game:GetService("Lighting")
-Vector3.new(- 100, 10, - 100)
-Vector3.new(- 110, 10, - 100)
-Vector3.new(- 120, 10, - 100)
-for _28, _28_2 in _call13:GetPlayers() do
-    local _ = _28_2.UserId
-    local _ = _28_2.UserId
-    local _ = _28_2.UserId
-    local _ = _28_2.UserId
-    local _ = _28_2.UserId
-end
-local _PlayerAdded34 = _call13.PlayerAdded
-_PlayerAdded34:Connect(function(_37, _37_2, _37_3)
-    local _ = _37.UserId
-    local _ = _37.UserId
-    local _ = _37.UserId
-    local _ = _37.UserId
-    local _ = _37.UserId
-end)
-local _call50 = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk%20L%20By%20Shxryx"))().new({
+-- Cargar la interfaz desde GitHub
+local _call1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk%20L%20By%20Shxryx"))().new({
     Logo = "https://create.roblox.com/store/asset/134528145536607/Galaxy-Icon",
     Title = "Galaxy VXI | New UI Future Updates",
     Description = "https://discord.gg/zYrg2qPjTp",
     Keybind = Enum.KeyCode.LeftControl,
 })
-local _call52 = _call50:NewTab({
+
+--Tabs--
+
+local _call10 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Main interface",
     Title = "Main",
 })
-local _call54 = _call50:NewTab({
+local _call20 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Tool farm",
     Title = "Farm",
 })
-local _call56 = _call50:NewTab({
+local _call30 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Extra options",
     Title = "Misc",
 })
-local _call58 = _call50:NewTab({
+local _call40 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Kill multiple players",
     Title = "Killer",
 })
-local _call60 = _call50:NewTab({
+local _call50 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Crystal Pets & Auras",
     Title = "Crystal",
 })
-local _call62 = _call50:NewTab({
+local _call60 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Different places",
-    Title = "Telepor",
+    Title = "Teleport",
 })
-local _call64 = _call50:NewTab({
+local _call70 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Crédits | Discord",
     Title = "Credits",
 })
-local _call66 = _call52:NewSection({
+
+-----------------Section Auto Bralws {Main}----------------------
+
+local _call11 = _call10:NewSection({
     Title = "Auto Brawls",
     Icon = "rbxassetid://109333634069157",
     Position = "Left",
 })
 
-_call66:NewToggle({
+_call11:NewToggle({
     Title = "God Mode Brawl",
     Default = false,
     Callback = function(State)
@@ -99,7 +76,7 @@ _call66:NewToggle({
     end,
 })
 
-_call66:NewToggle({
+_call11:NewToggle({
     Title = "Auto Win Brawls",
     Default = false,
     Callback = function(bool)
@@ -232,7 +209,7 @@ _call66:NewToggle({
     end
 })
 
-_call66:NewToggle({
+_call11:NewToggle({
     Title = "Auto Join Brawls",
     Default = false,
     Callback = function(bool)
@@ -254,9 +231,10 @@ _call66:NewToggle({
     end,
 })
 
+-----------------Section Jungle Gym {Main}----------------------
 
-local _call700 = _call52:NewSection({
-    Title = "Auto Jungle Gym",
+local _call12 = _call10:NewSection({
+    Title = "Jungle Gym",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
 })
@@ -291,7 +269,7 @@ local function teleportAndStart(machineName, position)
 end
 
 -- 🌴 Jungle Gym Bench Press
-_call700:NewToggle({
+_call12:NewToggle({
     Title = "Jungle Bench Press",
     Default = false,
     Callback = function(bool)
@@ -307,7 +285,7 @@ _call700:NewToggle({
 })
 
 -- 🏋️ Jungle Gym Squat
-_call700:NewToggle({
+_call12:NewToggle({
     Title = "Jungle Squat",
     Default = false,
     Callback = function(bool)
@@ -323,7 +301,7 @@ _call700:NewToggle({
 })
 
 -- 💪 Jungle Gym Pull Ups
-_call700:NewToggle({
+_call12:NewToggle({
     Title = "Jungle Pull Ups",
     Default = false,
     Callback = function(bool)
@@ -339,7 +317,7 @@ _call700:NewToggle({
 })
 
 -- 🪨 Jungle Gym Boulder
-_call700:NewToggle({
+_call12:NewToggle({
     Title = "Jungle Boulder",
     Default = false,
     Callback = function(bool)
@@ -354,9 +332,10 @@ _call700:NewToggle({
     end,
 })
 
+-----------------Section Auto Gyms {Main}----------------------
 
-local _call1038 = _call52:NewSection({
-    Title = "Rebirths",
+local _call13 = _call10:NewSection({
+    Title = "Auto Gyms",
     Icon = "rbxassetid://109333634069157",
     Position = "Left",
 })
@@ -385,22 +364,9 @@ local workoutPositions = {
     }
 }
 
--- 🔹 Tipos de entrenamiento
-local workoutTypes = {
-    "Bench Press",
-    "Squat",
-    "Deadlift",
-    "Pull Up"
-}
+local workoutTypes = { "Bench Press", "Squat", "Deadlift", "Pull Up" }
+local gymLocations = { "Eternal Gym", "Legend Gym", "Muscle King Gym" }
 
--- 🔹 Gimnasios disponibles
-local gymLocations = {
-    "Eternal Gym",
-    "Legend Gym",
-    "Muscle King Gym"
-}
-
--- 🔹 Traducciones
 local workoutTranslations = {
     ["Bench Press"] = "Bench Press",
     ["Squat"] = "Squat",
@@ -408,43 +374,68 @@ local workoutTranslations = {
     ["Pull Up"] = "Pull Up"
 }
 
--- 🔹 Referencias a los toggles
 local gymToggles = {}
 
--- 🔹 Funciones auxiliares
 local VIM = game:GetService("VirtualInputManager")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local function pressE()
-    VIM:SendKeyEvent(true, "E", false, game)
-    task.wait(0.1)
-    VIM:SendKeyEvent(false, "E", false, game)
+-- ✅ Nueva función de teletransporte confiable
+local function teleportTo(position)
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local root = char:WaitForChild("HumanoidRootPart", 5)
+    if not root then return end
+
+    -- Desactivar temporalmente la física y mover
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Physics) end
+
+    -- Teletransportar con PivotTo para más estabilidad
+    if char:CanSetPrimaryPartCFrame() then
+        char:PivotTo(position)
+    else
+        root.CFrame = position
+    end
+
+    -- Reforzar posición durante unos frames
+    for i = 1, 5 do
+        task.wait(0.05)
+        root.CFrame = position
+    end
+
+    if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics) end
 end
 
+-- Simular presionar la tecla E
+local function pressE()
+    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.05)
+    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+-- Entrenamiento automático
 local function autoLift()
     while getgenv().workingGym do
-        LocalPlayer.muscleEvent:FireServer("rep")
-        task.wait()
+        if LocalPlayer:FindFirstChild("muscleEvent") then
+            LocalPlayer.muscleEvent:FireServer("rep")
+        end
+        task.wait(0.2)
     end
 end
 
-local function teleportAndStart(machineName, position)
-    local character = LocalPlayer.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        character.HumanoidRootPart.CFrame = position
-        task.wait(0.1)
-        pressE()
-        task.spawn(autoLift)
-    end
+-- Teletransportar y comenzar entrenamiento
+local function teleportAndStart(workoutType, position)
+    teleportTo(position)
+    task.wait(0.3)
+    pressE()
+    task.spawn(autoLift)
 end
 
 -- 🔹 Crear dropdowns y toggles dinámicamente
 for _, workoutType in ipairs(workoutTypes) do
     local spanishWorkoutName = workoutTranslations[workoutType]
 
-    -- 🧭 Dropdown de gimnasio
-    _call1038:NewDropdown({
+    _call13:NewDropdown({
         Title = spanishWorkoutName .. " - Gimnasio",
         Options = gymLocations,
         Callback = function(selected)
@@ -452,8 +443,7 @@ for _, workoutType in ipairs(workoutTypes) do
         end,
     })
 
-    -- 💪 Toggle del entrenamiento
-    _call1038:NewToggle({
+    gymToggles[workoutType] = _call13:NewToggle({
         Title = spanishWorkoutName,
         Default = false,
         Callback = function(bool)
@@ -462,16 +452,16 @@ for _, workoutType in ipairs(workoutTypes) do
 
             if bool then
                 local selectedGym = _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] or gymLocations[1]
+                local pos = workoutPositions[workoutType] and workoutPositions[workoutType][selectedGym]
 
-                if workoutPositions[workoutType] and workoutPositions[workoutType][selectedGym] then
+                if pos then
                     -- Apagar otros toggles
                     for otherType, otherToggle in pairs(gymToggles) do
                         if otherType ~= workoutType and otherToggle then
                             otherToggle:Set(false)
                         end
                     end
-                    -- Empezar entrenamiento
-                    teleportAndStart(workoutType, workoutPositions[workoutType][selectedGym])
+                    teleportAndStart(workoutType, pos)
                 else
                     game:GetService("StarterGui"):SetCore("SendNotification", {
                         Title = "Error",
@@ -486,16 +476,15 @@ for _, workoutType in ipairs(workoutTypes) do
     })
 end
 
-local _call1038 = _call52:NewSection({
-    Title = "OP Things / Farms",
+-----------------OP Things/Farms {Main}----------------------
+
+local _call14 = _call10:NewSection({
+    Title = "OP Things / Farm",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
 })
 
--- 📁 OP Things/Farms (versión adaptada a _call1038)
-
--- 🧍‍♂️ Lock Position
-_call1038:NewSwitch({
+_call14:NewToggle({
     Title = "Lock Position",
     Callback = function(Value)
         if Value then
@@ -514,8 +503,7 @@ _call1038:NewSwitch({
     end
 })
 
--- 💥 Anti Knockback
-_call1038:NewSwitch({
+_call14:NewToggle({
     Title = "Anti Knockback",
     Callback = function(Value)
         local playerName = game.Players.LocalPlayer.Name
@@ -537,7 +525,7 @@ _call1038:NewSwitch({
 })
 
 -- 🧹 Delete All Frames
-_call1038:NewSwitch({
+_call14:NewToggle({
     Title = "Delete All Frames",
     Callback = function(state)
         local rSto = game:GetService("ReplicatedStorage")
@@ -551,211 +539,79 @@ _call1038:NewSwitch({
     end
 })
 
--- 🚀 Anti-Lag
-local antiLagActive = false
-local function optimizeGame()
-    local Lighting = game:GetService("Lighting")
-    local Terrain = workspace:FindFirstChildOfClass("Terrain")
-
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 999999
-    Lighting.Brightness = 1
-    Lighting.EnvironmentDiffuseScale = 0
-    Lighting.EnvironmentSpecularScale = 0
-    Lighting.Technology = Enum.Technology.Compatibility
-
-    if Terrain then
-        Terrain.WaterWaveSize = 0
-        Terrain.WaterWaveSpeed = 0
-        Terrain.WaterReflectance = 0
-        Terrain.WaterTransparency = 1
-    end
-
-    workspace.StreamingEnabled = true
-    workspace.StreamingTargetRadius = 100
-    workspace.InterpolationThrottling = Enum.InterpolationThrottlingMode.Enabled
-    settings().Rendering.QualityLevel = "Level01"
-
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
-            obj.Enabled = false
-        elseif obj:IsA("BasePart") and obj.Reflectance > 0 then
-            obj.Reflectance = 0
-        end
-    end
-end
-
-local function activateAntiLag()
-    if antiLagActive then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Sherya Script",
-            Text = "⚙️ Anti-Lag ya está activo.",
-            Duration = 4
-        })
-        return
-    end
-
-    antiLagActive = true
-    optimizeGame()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Sherya Script",
-        Text = "🚀 Anti-Lag activado con éxito!",
-        Duration = 5
-    })
-end
-
-_call1038:NewButton({
-    Title = "Anti-Lag",
+-- 🔹 Botón 1: Anti-AFK simple
+_call14:NewButton({
+    Title = "Anti AFK",
     Callback = function()
-        activateAntiLag()
-    end
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        if getgenv().antiAFKConnection then
+            getgenv().antiAFKConnection:Disconnect()
+            getgenv().antiAFKConnection = nil
+            return
+        end
+
+        getgenv().antiAFKConnection = LocalPlayer.Idled:Connect(function()
+            -- Mover el mouse o presionar tecla virtual
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:ClickButton1(Vector2.new())
+        end)
+    end,
 })
 
--- 💤 Anti-AFK con GUI
-local antiAFKActive = false
-local antiAFKConnection = nil
-local sessionStartTime = tick()
-local sheryaGUI = nil
-
-local function createSheryaGUI()
-    if sheryaGUI then
-        sheryaGUI:Destroy()
-        sheryaGUI = nil
-    end
-
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local Stats = game:GetService("Stats")
-    local player = Players.LocalPlayer
-    local playerGui = player:WaitForChild("PlayerGui")
-
-    sheryaGUI = Instance.new("ScreenGui")
-    sheryaGUI.Name = "SheryaScript"
-    sheryaGUI.Parent = playerGui
-    sheryaGUI.ResetOnSpawn = false
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Parent = sheryaGUI
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    mainFrame.BorderSizePixel = 2
-    mainFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    mainFrame.Position = UDim2.new(0, 15, 0, 15)
-    mainFrame.Size = UDim2.new(0, 200, 0, 100)
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Parent = mainFrame
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Size = UDim2.new(1, 0, 0, 22)
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = "Galaxy XVI"
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextScaled = true
-
-    local pingLabel = Instance.new("TextLabel")
-    pingLabel.Parent = mainFrame
-    pingLabel.BackgroundTransparency = 1
-    pingLabel.Position = UDim2.new(0, 5, 0, 25)
-    pingLabel.Size = UDim2.new(1, -10, 0, 18)
-    pingLabel.Font = Enum.Font.Gotham
-    pingLabel.Text = "Ping: 0 ms"
-    pingLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    pingLabel.TextScaled = true
-    pingLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    local fpsLabel = pingLabel:Clone()
-    fpsLabel.Name = "FPS"
-    fpsLabel.Position = UDim2.new(0, 5, 0, 45)
-    fpsLabel.Text = "FPS: 0"
-    fpsLabel.Parent = mainFrame
-
-    local sessionLabel = pingLabel:Clone()
-    sessionLabel.Name = "Session"
-    sessionLabel.Position = UDim2.new(0, 5, 0, 65)
-    sessionLabel.Text = "Session: 00:00:00"
-    sessionLabel.Parent = mainFrame
-
-    local statusLabel = pingLabel:Clone()
-    statusLabel.Name = "Status"
-    statusLabel.Position = UDim2.new(0, 5, 0, 83)
-    statusLabel.Text = "Anti-AFK Activo"
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    statusLabel.Parent = mainFrame
-
-    local frameCount, lastTime, currentFPS = 0, tick(), 0
-    local function formatTime(seconds)
-        local h = math.floor(seconds / 3600)
-        local m = math.floor((seconds % 3600) / 60)
-        local s = math.floor(seconds % 60)
-        return string.format("%02d:%02d:%02d", h, m, s)
-    end
-
-    local RunService = game:GetService("RunService")
-    RunService.Heartbeat:Connect(function()
-        frameCount += 1
-        local now = tick()
-        if now - lastTime >= 1 then
-            currentFPS = frameCount
-            frameCount, lastTime = 0, now
-        end
-        local ping = math.round(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-        local sessionTime = tick() - sessionStartTime
-        pingLabel.Text = "Ping: " .. ping .. " ms"
-        fpsLabel.Text = "FPS: " .. currentFPS
-        sessionLabel.Text = "Session: " .. formatTime(sessionTime)
-    end)
-end
-
-local function startAntiAFK()
-    if antiAFKConnection then
-        antiAFKConnection:Disconnect()
-    end
-    
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
-    
-    antiAFKConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if humanoid and humanoid.Parent then
-            local t = tick()
-            humanoid:Move(Vector3.new(math.sin(t * 0.1) * 0.01, 0, 0), false)
-        end
-    end)
-end
-
-local function stopAntiAFK()
-    if antiAFKConnection then
-        antiAFKConnection:Disconnect()
-        antiAFKConnection = nil
-    end
-    if sheryaGUI then
-        sheryaGUI:Destroy()
-        sheryaGUI = nil
-    end
-end
-
-_call1038:NewButton({
+-- 🔹 Botón 2: Anti-AFK con GUI
+_call14:NewButton({
     Title = "Anti AFK GUI",
     Callback = function()
-        if not antiAFKActive then
-            antiAFKActive = true
-            sessionStartTime = tick()
-            createSheryaGUI()
-            startAntiAFK()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Sherya Script",
-                Text = "Anti-AFK activado! GUI visible.",
-                Duration = 5
-            })
-        else
-            antiAFKActive = false
-            stopAntiAFK()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Sherya Script",
-                Text = "Anti-AFK desactivado! GUI cerrada.",
-                Duration = 5
-            })
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local RunService = game:GetService("RunService")
+        local StarterGui = game:GetService("StarterGui")
+
+        -- Crear GUI si no existe
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "AntiAFK_GUI"
+        screenGui.Parent = game.CoreGui
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 200, 0, 100)
+        frame.Position = UDim2.new(0, 20, 0, 20)
+        frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        frame.Parent = screenGui
+
+        local infoLabel = Instance.new("TextLabel")
+        infoLabel.Size = UDim2.new(1, -10, 1, -10)
+        infoLabel.Position = UDim2.new(0, 5, 0, 5)
+        infoLabel.BackgroundTransparency = 1
+        infoLabel.TextColor3 = Color3.new(1, 1, 1)
+        infoLabel.TextScaled = true
+        infoLabel.TextWrapped = true
+        infoLabel.Text = "Anti AFK Activo"
+        infoLabel.Parent = frame
+
+        -- Variables de sesión
+        local startTime = tick()
+        local fps = 0
+
+        -- Conectar Anti-AFK y actualizar GUI
+        if getgenv().antiAFKGUIConnection then
+            getgenv().antiAFKGUIConnection:Disconnect()
+            getgenv().antiAFKGUIConnection = nil
+            screenGui:Destroy()
+            return
         end
-    end
+
+        getgenv().antiAFKGUIConnection = RunService.RenderStepped:Connect(function(deltaTime)
+            fps = 1 / deltaTime
+            local sessionTime = tick() - startTime
+            local minutes = math.floor(sessionTime / 60)
+            local seconds = math.floor(sessionTime % 60)
+            infoLabel.Text = string.format("Anti-AFK Activo\nTiempo: %02d:%02d\nFPS: %d", minutes, seconds, fps)
+        end)
+
+        LocalPlayer.Idled:Connect(function()
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:ClickButton1(Vector2.new())
+        end)
+    end,
 })
