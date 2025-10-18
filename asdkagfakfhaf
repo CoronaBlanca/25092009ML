@@ -34,26 +34,41 @@ local _call30 = _call1:NewTab({
 })
 local _call40 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
+    Description = "Everyone Gyms",
+    Title = "Gyms",
+})
+local _call50 = _call1:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Calculate everything",
+    Title = "Calculator",
+})
+local _call60 = _call1:NewTab({
+    Icon = "rbxassetid://134528145536607",
+    Description = "Shows statistics",
+    Title = "Stats",
+})
+local _call70 = _call1:NewTab({
+    Icon = "rbxassetid://134528145536607",
     Description = "Kill multiple players",
     Title = "Killer",
 })
-local _call50 = _call1:NewTab({
+local _call80 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Crystal Pets & Auras",
     Title = "Crystal",
 })
-local _call60 = _call1:NewTab({
+local _call90 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Different places",
     Title = "Teleport",
 })
-local _call70 = _call1:NewTab({
+local _call100 = _call1:NewTab({
     Icon = "rbxassetid://134528145536607",
     Description = "Crédits | Discord",
     Title = "Credits",
 })
 
------------------Section Auto Bralws {Main}----------------------
+--- Sección de Entrenamiento
 
 local _call11 = _call10:NewSection({
     Title = "Auto Brawls",
@@ -61,586 +76,25 @@ local _call11 = _call10:NewSection({
     Position = "Left",
 })
 
-_call11:NewToggle({
-    Title = "God Mode Brawl",
-    Default = false,
-    Callback = function(State)
-        if State then
-            task.spawn(function()
-                while State do
-                    game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
-                    task.wait(0)
-                end
-            end)
-        end
-    end,
-})
-
-_call11:NewToggle({
-    Title = "Auto Win Brawls",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoWinBrawl = bool
-        
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-
-        -- Equip Punch Tool
-        local function equipPunch()
-            if not getgenv().autoWinBrawl then return end
-            local character = player.Character
-            if not character then return false end
-            if character:FindFirstChild("Punch") then return true end
-            local backpack = player.Backpack
-            if not backpack then return false end
-            for _, tool in pairs(backpack:GetChildren()) do
-                if tool.ClassName == "Tool" and tool.Name == "Punch" then
-                    tool.Parent = character
-                    return true
-                end
-            end
-            return false
-        end
-
-        local function isValidTarget(target)
-            if not target or not target.Parent then return false end
-            if target == player then return false end
-            local character = target.Character
-            if not character then return false end
-            local humanoid = character:FindFirstChild("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then return false end
-            if humanoid:GetState() == Enum.HumanoidStateType.Dead then return false end
-            local root = character:FindFirstChild("HumanoidRootPart")
-            if not root then return false end
-            return true
-        end
-
-        local function isLocalReady()
-            local char = player.Character
-            if not char then return false end
-            local hum = char:FindFirstChild("Humanoid")
-            if not hum or hum.Health <= 0 then return false end
-            return (char:FindFirstChild("LeftHand") or char:FindFirstChild("RightHand"))
-        end
-
-        local function safeTouch(target, localPart)
-            if not target or not localPart then return end
-            pcall(function()
-                firetouchinterest(target, localPart, 0)
-                task.wait(0.01)
-                firetouchinterest(target, localPart, 1)
-            end)
-        end
-
-        -- Join brawl automatically
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
-                    game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                    player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
-                end
-            end
-        end)
-
-        -- Keep punch equipped
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                equipPunch()
-            end
-        end)
-
-        -- Punch constantly
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.1) do
-                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    pcall(function() player.muscleEvent:FireServer("punch", "rightHand") end)
-                    pcall(function() player.muscleEvent:FireServer("punch", "leftHand") end)
-                end
-            end
-        end)
-
-        -- Attack others
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.05) do
-                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    local char = player.Character
-                    local left, right = char:FindFirstChild("LeftHand"), char:FindFirstChild("RightHand")
-                    for _, target in pairs(Players:GetPlayers()) do
-                        if not getgenv().autoWinBrawl then break end
-                        pcall(function()
-                            if isValidTarget(target) then
-                                local root = target.Character:FindFirstChild("HumanoidRootPart")
-                                if left then safeTouch(root, left) end
-                                if right then safeTouch(root, right) end
-                            end
-                        end)
-                        task.wait(0.01)
-                    end
-                end
-            end
-        end)
-
-        -- Recovery system
-        task.spawn(function()
-            local lastCount, stuck = 0, 0
-            while getgenv().autoWinBrawl and task.wait(1) do
-                local current = #Players:GetPlayers()
-                if current ~= lastCount then
-                    stuck = 0
-                    lastCount = current
-                else
-                    stuck += 1
-                    if stuck > 5 then
-                        stuck = 0
-                        pcall(function()
-                            local char = player.Character
-                            if char and char:FindFirstChild("Punch") then
-                                char.Punch.Parent = player.Backpack
-                                task.wait(0.1)
-                                equipPunch()
-                            else
-                                equipPunch()
-                            end
-                        end)
-                    end
-                end
-            end
-        end)
-    end
-})
-
-_call11:NewToggle({
-    Title = "Auto Join Brawls",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoJoinBrawl = bool
-        if bool then
-            task.spawn(function()
-                while getgenv().autoJoinBrawl and task.wait(0.5) do
-                    if not getgenv().autoJoinBrawl then break end
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
-                            game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                            player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
-                        end
-                    end)
-                end
-            end)
-        end
-    end,
-})
-
------------------Section Jungle Gym {Main}----------------------
-
 local _call12 = _call10:NewSection({
-    Title = "Jungle Gym",
+    Title = "Auto Snacks",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
 })
 
--- Cache services for faster access
-local VIM = game:GetService("VirtualInputManager")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- Helper functions for Jungle Gym
-local function pressE()
-    VIM:SendKeyEvent(true, "E", false, game)
-    task.wait(0.1)
-    VIM:SendKeyEvent(false, "E", false, game)
-end
-
-local function autoLift()
-    while getgenv().working do
-        LocalPlayer.muscleEvent:FireServer("rep")
-        task.wait()
-    end
-end
-
-local function teleportAndStart(machineName, position)
-    local character = LocalPlayer.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        character.HumanoidRootPart.CFrame = position
-        task.wait(0.1)
-        pressE()
-        task.spawn(autoLift)
-    end
-end
-
--- 🌴 Jungle Gym Bench Press
-_call12:NewToggle({
-    Title = "Jungle Bench Press",
-    Default = false,
-    Callback = function(bool)
-        if getgenv().working and not bool then
-            getgenv().working = false
-            return
-        end
-        getgenv().working = bool
-        if bool then
-            teleportAndStart("Bench Press", CFrame.new(-8173, 64, 1898))
-        end
-    end,
-})
-
--- 🏋️ Jungle Gym Squat
-_call12:NewToggle({
-    Title = "Jungle Squat",
-    Default = false,
-    Callback = function(bool)
-        if getgenv().working and not bool then
-            getgenv().working = false
-            return
-        end
-        getgenv().working = bool
-        if bool then
-            teleportAndStart("Squat", CFrame.new(-8352, 34, 2878))
-        end
-    end,
-})
-
--- 💪 Jungle Gym Pull Ups
-_call12:NewToggle({
-    Title = "Jungle Pull Ups",
-    Default = false,
-    Callback = function(bool)
-        if getgenv().working and not bool then
-            getgenv().working = false
-            return
-        end
-        getgenv().working = bool
-        if bool then
-            teleportAndStart("Pull Up", CFrame.new(-8666, 34, 2070))
-        end
-    end,
-})
-
--- 🪨 Jungle Gym Boulder
-_call12:NewToggle({
-    Title = "Jungle Boulder",
-    Default = false,
-    Callback = function(bool)
-        if getgenv().working and not bool then
-            getgenv().working = false
-            return
-        end
-        getgenv().working = bool
-        if bool then
-            teleportAndStart("Boulder", CFrame.new(-8621, 34, 2684))
-        end
-    end,
-})
-
------------------Section Auto Gyms {Main}----------------------
-
 local _call13 = _call10:NewSection({
-    Title = "Auto Gyms",
+    Title = "Extras",
     Icon = "rbxassetid://109333634069157",
     Position = "Left",
 })
 
--- 🔹 Datos de posiciones de entrenamiento
-local workoutPositions = {
-    ["Bench Press"] = {
-        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
-        ["Legend Gym"] = CFrame.new(4111.91748, 1020.46674, -3799.97217),
-        ["Muscle King Gym"] = CFrame.new(-8590.06152, 46.0167427, -6043.34717)
-    },
-    ["Squat"] = {
-        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
-        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
-        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
-    },
-    ["Deadlift"] = {
-        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
-        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
-        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
-    },
-    ["Pull Up"] = {
-        ["Eternal Gym"] = CFrame.new(-7176.19141, 45.394104, -1106.31421),
-        ["Legend Gym"] = CFrame.new(4304.99023, 987.829956, -4124.2334),
-        ["Muscle King Gym"] = CFrame.new(-8940.12402, 13.1642084, -5699.13477)
-    }
-}
-
-local workoutTypes = { "Bench Press", "Squat", "Deadlift", "Pull Up" }
-local gymLocations = { "Eternal Gym", "Legend Gym", "Muscle King Gym" }
-
-local workoutTranslations = {
-    ["Bench Press"] = "Bench Press",
-    ["Squat"] = "Squat",
-    ["Deadlift"] = "Dead Lift",
-    ["Pull Up"] = "Pull Up"
-}
-
-local gymToggles = {}
-
-local VIM = game:GetService("VirtualInputManager")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- ✅ Nueva función de teletransporte confiable
-local function teleportTo(position)
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local root = char:WaitForChild("HumanoidRootPart", 5)
-    if not root then return end
-
-    -- Desactivar temporalmente la física y mover
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Physics) end
-
-    -- Teletransportar con PivotTo para más estabilidad
-    if char:CanSetPrimaryPartCFrame() then
-        char:PivotTo(position)
-    else
-        root.CFrame = position
-    end
-
-    -- Reforzar posición durante unos frames
-    for i = 1, 5 do
-        task.wait(0.05)
-        root.CFrame = position
-    end
-
-    if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics) end
-end
-
--- Simular presionar la tecla E
-local function pressE()
-    VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-    task.wait(0.05)
-    VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-end
-
--- Entrenamiento automático
-local function autoLift()
-    while getgenv().workingGym do
-        if LocalPlayer:FindFirstChild("muscleEvent") then
-            LocalPlayer.muscleEvent:FireServer("rep")
-        end
-        task.wait(0.2)
-    end
-end
-
--- Teletransportar y comenzar entrenamiento
-local function teleportAndStart(workoutType, position)
-    teleportTo(position)
-    task.wait(0.3)
-    pressE()
-    task.spawn(autoLift)
-end
-
--- 🔹 Crear dropdowns y toggles dinámicamente
-for _, workoutType in ipairs(workoutTypes) do
-    local spanishWorkoutName = workoutTranslations[workoutType]
-
-    _call13:NewDropdown({
-        Title = spanishWorkoutName .. " - Gimnasio",
-        Options = gymLocations,
-        Callback = function(selected)
-            _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] = selected
-        end,
-    })
-
-    gymToggles[workoutType] = _call13:NewToggle({
-        Title = spanishWorkoutName,
-        Default = false,
-        Callback = function(bool)
-            getgenv().workingGym = bool
-            getgenv().currentWorkoutType = workoutType
-
-            if bool then
-                local selectedGym = _G["selected" .. string.gsub(workoutType, " ", "") .. "Gym"] or gymLocations[1]
-                local pos = workoutPositions[workoutType] and workoutPositions[workoutType][selectedGym]
-
-                if pos then
-                    -- Apagar otros toggles
-                    for otherType, otherToggle in pairs(gymToggles) do
-                        if otherType ~= workoutType and otherToggle then
-                            otherToggle:Set(false)
-                        end
-                    end
-                    teleportAndStart(workoutType, pos)
-                else
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "Error",
-                        Text = "No se encontró posición para " .. workoutType .. " en " .. selectedGym,
-                        Duration = 5
-                    })
-                end
-            else
-                getgenv().workingGym = false
-            end
-        end,
-    })
-end
-
------------------OP Things/Farms {Main}----------------------
-
 local _call14 = _call10:NewSection({
-    Title = "OP Things / Farm",
+    Title = "OP Things Farm",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
 })
 
-_call14:NewToggle({
-    Title = "Lock Position",
-    Callback = function(Value)
-        if Value then
-            local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-            getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
-                if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
-                end
-            end)
-        else
-            if getgenv().posLock then
-                getgenv().posLock:Disconnect()
-                getgenv().posLock = nil
-            end
-        end
-    end
-})
-
-_call14:NewToggle({
-    Title = "Anti Knockback",
-    Callback = function(Value)
-        local playerName = game.Players.LocalPlayer.Name
-        local rootPart = game.Workspace:FindFirstChild(playerName):FindFirstChild("HumanoidRootPart")
-        
-        if Value then
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-            bodyVelocity.P = 1250
-            bodyVelocity.Parent = rootPart
-        else
-            local existingVelocity = rootPart:FindFirstChild("BodyVelocity")
-            if existingVelocity and existingVelocity.MaxForce == Vector3.new(100000, 0, 100000) then
-                existingVelocity:Destroy()
-            end
-        end
-    end
-})
-
--- 🧹 Delete All Frames
-_call14:NewToggle({
-    Title = "Delete All Frames",
-    Callback = function(state)
-        local rSto = game:GetService("ReplicatedStorage")
-        for _, obj in pairs(rSto:GetChildren()) do
-            if obj.Name:match("Frame$") and obj:IsA("GuiObject") then
-                if state then
-                    obj:Destroy()
-                end
-            end
-        end
-    end
-})
-
-_call14:NewButton({
-    Title = "Anti AFK",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-
-        -- Si ya está activo, desconecta
-        if getgenv().antiAFKConnection then
-            getgenv().antiAFKConnection:Disconnect()
-            getgenv().antiAFKConnection = nil
-            return
-        end
-
-        -- Conectar Anti-AFK ligero
-        getgenv().antiAFKConnection = LocalPlayer.Idled:Connect(function()
-            local VirtualUser = game:GetService("VirtualUser")
-            -- Simular solo un click pequeño, suficiente para reiniciar AFK
-            VirtualUser:ClickButton1(Vector2.new())
-        end)
-    end,
-})
-
-_call14:NewButton({
-    Title = "Anti-AFK GUI",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        local RunService = game:GetService("RunService")
-
-        -- Si ya existe, desconectamos y eliminamos
-        if getgenv().antiAFKGUIConnection then
-            getgenv().antiAFKGUIConnection:Disconnect()
-            getgenv().antiAFKGUIConnection = nil
-            if game.CoreGui:FindFirstChild("AntiAFK_GUI") then
-                game.CoreGui:FindFirstChild("AntiAFK_GUI"):Destroy()
-            end
-            return
-        end
-
-        -- Crear GUI
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "AntiAFK_GUI"
-        screenGui.ResetOnSpawn = false
-        screenGui.Parent = game.CoreGui
-
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 220, 0, 120)
-        frame.Position = UDim2.new(0, 50, 0, 50)
-        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(25, 25, 25)
-        frame.Parent = screenGui
-
-        -- Hacer draggable
-        frame.Active = true
-        frame.Draggable = true
-
-        -- Título
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 30)
-        title.Position = UDim2.new(0, 0, 0, 0)
-        title.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        title.BorderSizePixel = 2
-        title.BorderColor3 = Color3.fromRGB(25, 25, 25)
-        title.Text = "Galaxy XVI"
-        title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        title.TextScaled = true
-        title.TextWrapped = true
-        title.Font = Enum.Font.SourceSansBold
-        title.Parent = frame
-
-        -- Información
-        local infoLabel = Instance.new("TextLabel")
-        infoLabel.Size = UDim2.new(1, -10, 1, -40)
-        infoLabel.Position = UDim2.new(0, 5, 0, 35)
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        infoLabel.TextScaled = true
-        infoLabel.TextWrapped = true
-        infoLabel.Text = "Anti-AFK Activo"
-        infoLabel.Font = Enum.Font.SourceSans
-        infoLabel.Parent = frame
-
-        -- Variables de sesión
-        local startTime = tick()
-        local fps = 0
-
-        -- Conectar Anti-AFK y actualizar GUI
-        getgenv().antiAFKGUIConnection = RunService.RenderStepped:Connect(function(deltaTime)
-            fps = math.floor(1 / deltaTime)
-            local sessionTime = tick() - startTime
-            local minutes = math.floor(sessionTime / 60)
-            local seconds = math.floor(sessionTime % 60)
-            infoLabel.Text = string.format("Anti-AFK Activo\nTiempo: %02d:%02d\nFPS: %d", minutes, seconds, fps)
-        end)
-
-        LocalPlayer.Idled:Connect(function()
-            local VirtualUser = game:GetService("VirtualUser")
-            VirtualUser:ClickButton1(Vector2.new())
-        end)
-    end,
-})
+--- Sección de Entrenamiento
 
 local _call21 = _call20:NewSection({
     Title = "Auto Rocks",
@@ -648,390 +102,130 @@ local _call21 = _call20:NewSection({
     Position = "Left",
 })
 
-local function createAutoRockToggle(rockName, minDurability, displayName)
-    _call21:NewToggle({
-        Title = displayName or rockName,
-        Default = false,
-        Callback = function(Value)
-            getgenv().autoFarm = Value
-
-            task.spawn(function()
-                while getgenv().autoFarm do
-                    task.wait()
-                    if not getgenv().autoFarm then break end
-
-                    local player = game.Players.LocalPlayer
-                    local char = player.Character
-                    local durability = player:FindFirstChild("Durability")
-                    if durability and durability.Value >= minDurability and char and char:FindFirstChild("LeftHand") and char:FindFirstChild("RightHand") then
-                        for i, v in pairs(game:GetService("Workspace").machinesFolder:GetDescendants()) do
-                            if v.Name == "neededDurability" and v.Value == minDurability then
-                                firetouchinterest(v.Parent.Rock, char.RightHand, 0)
-                                firetouchinterest(v.Parent.Rock, char.RightHand, 1)
-                                firetouchinterest(v.Parent.Rock, char.LeftHand, 0)
-                                firetouchinterest(v.Parent.Rock, char.LeftHand, 1)
-
-                                -- Equipar la herramienta y disparar el evento
-                                for _, tool in pairs(player.Backpack:GetChildren()) do
-                                    if tool.Name == "Punch" and char:FindFirstChild("Humanoid") then
-                                        char.Humanoid:EquipTool(tool)
-                                    end
-                                end
-                                player.muscleEvent:FireServer("punch", "leftHand")
-                                player.muscleEvent:FireServer("punch", "rightHand")
-                            end
-                        end
-                    end
-                end
-            end)
-        end,
-    })
-end
-
--- 🔹 Crear los toggles automáticamente
-createAutoRockToggle("Tiny Island Rock", 0, "Tiny Rock")
-createAutoRockToggle("Starter Island Rock", 100, "Starter Rock")
-createAutoRockToggle("Legend Beach Rock", 5000, "Legend Beach Rock")
-createAutoRockToggle("Frost Gym Rock", 150000, "Frozen Rock")
-createAutoRockToggle("Mythical Gym Rock", 400000, "Mythical Rock")
-createAutoRockToggle("Eternal Gym Rock", 750000, "Eternal Rock")
-createAutoRockToggle("Legend Gym Rock", 1000000, "Legend Rock")
-createAutoRockToggle("Muscle King Gym Rock", 5000000, "Muscle King Rock")
-createAutoRockToggle("Ancient Jungle Rock", 10000000, "Jungle Rock")
-
 local _call22 = _call20:NewSection({
     Title = "Auto Tools",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
 })
 
--- 🔹 Botón Gamepass AutoLift
-_call22:NewButton({
-    Title = "Gamepass AutoLift",
-    Callback = function()
-        local gamepassFolder = game:GetService("ReplicatedStorage").gamepassIds
-        local player = game:GetService("Players").LocalPlayer
-        for _, gamepass in pairs(gamepassFolder:GetChildren()) do
-            local value = Instance.new("IntValue")
-            value.Name = gamepass.Name
-            value.Value = gamepass.Value
-            value.Parent = player.ownedGamepasses
-        end
-    end,
-    Description = "Desbloquea el gamepass de AutoLift gratis"
-})
-
--- 🔹 Función genérica para toggles de ejercicios
-local function createExerciseToggle(toolName, toggleTitle, repProperty)
-    _call22:NewToggle({
-        Title = toggleTitle,
-        Default = false,
-        Callback = function(Value)
-            _G[toggleTitle:gsub("%s", "")] = Value
-            local player = game.Players.LocalPlayer
-            local char = player.Character
-            local backpack = player.Backpack
-
-            -- Equipar o devolver herramienta
-            if Value then
-                local tool = backpack:FindFirstChild(toolName)
-                if tool and char:FindFirstChild("Humanoid") then
-                    char.Humanoid:EquipTool(tool)
-                end
-            else
-                local equipped = char:FindFirstChild(toolName)
-                if equipped then
-                    equipped.Parent = backpack
-                end
-            end
-
-            -- Auto repetir acción
-            task.spawn(function()
-                while _G[toggleTitle:gsub("%s", "")] do
-                    if not _G[toggleTitle:gsub("%s", "")] then break end
-                    player.muscleEvent:FireServer(repProperty or "rep")
-                    task.wait(0.1)
-                end
-            end)
-        end,
-        Description = "Activa " .. toggleTitle .. " automáticamente"
-    })
-end
-
--- 🔹 Crear toggles de ejercicios
-createExerciseToggle("Weight", "Auto Weight")
-createExerciseToggle("Pushups", "Auto Pushups")
-createExerciseToggle("Handstands", "Auto Handstands")
-createExerciseToggle("Situps", "Auto Situps")
-
--- 🔹 Toggle Auto Punch
-_call22:NewToggle({
-    Title = "Auto Punch",
-    Default = false,
-    Callback = function(Value)
-        _G.fastHitActive = Value
-        local player = game.Players.LocalPlayer
-
-        if Value then
-            -- Equipar Punch y ajustar attackTime
-            task.spawn(function()
-                while _G.fastHitActive do
-                    if not _G.fastHitActive then break end
-                    local punch = player.Backpack:FindFirstChild("Punch")
-                    if punch then
-                        punch.Parent = player.Character
-                        if punch:FindFirstChild("attackTime") then
-                            punch.attackTime.Value = 0
-                        end
-                    end
-                    task.wait(0.1)
-                end
-            end)
-
-            -- Golpear rápido
-            task.spawn(function()
-                while _G.fastHitActive do
-                    if not _G.fastHitActive then break end
-                    player.muscleEvent:FireServer("punch", "rightHand")
-                    player.muscleEvent:FireServer("punch", "leftHand")
-                    local punchTool = player.Character and player.Character:FindFirstChild("Punch")
-                    if punchTool then
-                        punchTool:Activate()
-                    end
-                    task.wait(0)
-                end
-            end)
-        else
-            local equipped = player.Character:FindFirstChild("Punch")
-            if equipped then
-                equipped.Parent = player.Backpack
-            end
-        end
-    end,
-    Description = "Golpea automáticamente"
-})
-
--- 🔹 Toggle Fast Tools
-_call22:NewToggle({
-    Title = "Fast Tools",
-    Default = false,
-    Callback = function(Value)
-        _G.FastTools = Value
-        local player = game.Players.LocalPlayer
-        local backpack = player:WaitForChild("Backpack")
-
-        local defaultSpeeds = {
-            {"Punch", "attackTime", Value and 0 or 0.35},
-            {"Ground Slam", "attackTime", Value and 0 or 6},
-            {"Stomp", "attackTime", Value and 0 or 7},
-            {"Handstands", "repTime", Value and 0 or 1},
-            {"Pushups", "repTime", Value and 0 or 1},
-            {"Weight", "repTime", Value and 0 or 1},
-            {"Situps", "repTime", Value and 0 or 1}
-        }
-
-        for _, toolInfo in ipairs(defaultSpeeds) do
-            local tool = backpack:FindFirstChild(toolInfo[1])
-            if tool and tool:FindFirstChild(toolInfo[2]) then
-                tool[toolInfo[2]].Value = toolInfo[3]
-            end
-
-            local equippedTool = player.Character and player.Character:FindFirstChild(toolInfo[1])
-            if equippedTool and equippedTool:FindFirstChild(toolInfo[2]) then
-                equippedTool[toolInfo[2]].Value = toolInfo[3]
-            end
-        end
-    end,
-    Description = "Acelera todas las herramientas"
-})
-
 local _call23 = _call20:NewSection({
-    Title = "Auto Rebirths",
+    Title = "Auto rebirth",
     Icon = "rbxassetid://109333634069157",
     Position = "Left",
 })
 
--- 🔹 Rebirth Target Input
-_call23:NewTextBox({
-    Title = "Rebirth Target",
-    Callback = function(text)
-        local newValue = tonumber(text)
-        if newValue and newValue > 0 then
-            targetRebirthValue = newValue
-            updateStats() -- Actualizar estadísticas
-            
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Objetivo Actualizado",
-                Text = "Nuevo objetivo: " .. tostring(targetRebirthValue) .. " renacimientos",
-                Duration = 0
-            })
-        else
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "Entrada Inválida",
-                Text = "Por favor ingresa un número válido mayor que 0",
-                Duration = 0
-            })
-        end
-    end
+local _call24 = _call20:NewSection({
+    Title = "Auto Tools Combinate",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
 })
 
--- 🔹 Auto Rebirth Toggles
-local infiniteSwitch
-local targetSwitch
+--- Sección de Entrenamiento
 
-targetSwitch = _call23:NewToggle({
-    Title = "Auto Rebirth Target",
-    Default = false,
-    Callback = function(bool)
-        _G.targetRebirthActive = bool
-
-        if bool then
-            if _G.infiniteRebirthActive and infiniteSwitch then
-                infiniteSwitch:Set(false)
-                _G.infiniteRebirthActive = false
-            end
-
-            spawn(function()
-                while _G.targetRebirthActive and wait(0.1) do
-                    local currentRebirths = game.Players.LocalPlayer.leaderstats.Rebirths.Value
-                    if currentRebirths >= targetRebirthValue then
-                        targetSwitch:Set(false)
-                        _G.targetRebirthActive = false
-
-                        game:GetService("StarterGui"):SetCore("SendNotification", {
-                            Title = "¡Objetivo Alcanzado!",
-                            Text = "Has alcanzado " .. tostring(targetRebirthValue) .. " renacimientos",
-                            Duration = 5
-                        })
-                        break
-                    end
-                    game:GetService("ReplicatedStorage").rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-                end
-            end)
-        end
-    end,
-    Description = "Renacimiento automático hasta alcanzar el objetivo"
+local _call31 = _call30:NewSection({
+    Title = "Misc 1",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
 })
 
-infiniteSwitch = _call23:NewToggle({
-    Title = "Auto Rebirth (Infinite)",
-    Default = false,
-    Callback = function(bool)
-        _G.infiniteRebirthActive = bool
-
-        if bool then
-            if _G.targetRebirthActive and targetSwitch then
-                targetSwitch:Set(false)
-                _G.targetRebirthActive = false
-            end
-
-            spawn(function()
-                while _G.infiniteRebirthActive and wait(0.1) do
-                    game:GetService("ReplicatedStorage").rEvents.rebirthRemote:InvokeServer("rebirthRequest")
-                end
-            end)
-        end
-    end,
-    Description = "Renacimiento continuo sin parar"
+local _call32 = _call30:NewSection({
+    Title = "Misc 2",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
 })
 
--- 🔹 Auto Size Toggle
-_call23:NewToggle({
-    Title = "Auto Size 1",
-    Default = false,
-    Callback = function(bool)
-        _G.autoSizeActive = bool
-        local player = game.Players.LocalPlayer
-
-        if bool then
-            spawn(function()
-                while _G.autoSizeActive and wait() do
-                    game:GetService("ReplicatedStorage").rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", 1)
-                end
-            end)
-        end
-    end,
-    Description = "Establece el tamaño del personaje a 1 continuamente"
+local _call33 = _call30:NewSection({
+    Title = "Misc 3",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
 })
 
--- 🔹 Auto Teleport Toggle
-_call23:NewToggle({
-    Title = "Auto Teleport to Muscle King",
-    Default = false,
-    Callback = function(bool)
-        _G.teleportActive = bool
-        local player = game.Players.LocalPlayer
-
-        if bool then
-            spawn(function()
-                while _G.teleportActive and wait() do
-                    if player.Character then
-                        player.Character:MoveTo(Vector3.new(-8646, 17, -5738))
-                    end
-                end
-            end)
-        end
-    end,
-    Description = "Teletransporte continuo al Rey Músculo"
+local _call34 = _call30:NewSection({
+    Title = "Misc 4",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
 })
 
--- 🔹 Funciones auxiliares para Auto Tools combinados
-local function equipToolFast(player, toolName, repName, repValue)
-    local tool = player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName)
-    if tool and player.Character and player.Character:FindFirstChild("Humanoid") then
-        tool.Parent = player.Character
-        if repName and tool:FindFirstChild(repName) then
-            tool[repName].Value = repValue
-        end
-    end
-end
+--- Seccion de entrenamiento
 
-local function fastPunch(player)
-    local punch = player.Backpack:FindFirstChild("Punch") or player.Character:FindFirstChild("Punch")
-    if punch then
-        punch.Parent = player.Character
-        if punch:FindFirstChild("attackTime") then punch.attackTime.Value = 0 end
-        player.muscleEvent:FireServer("punch", "rightHand")
-        player.muscleEvent:FireServer("punch", "leftHand")
-        local punchTool = player.Character and player.Character:FindFirstChild("Punch")
-        if punchTool then punchTool:Activate() end
-    end
-end
+local _call41 = _call40:NewSection({
+    Title = "Tiny Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
 
--- 🔹 Auto Tools Combinados Toggles
-local combos = {
-    {"Auto Weight + Punch", "Weight", "repTime", 0, "Punch"},
-    {"Auto Pushups + Punch", "Pushups", "repTime", 0, "Punch"},
-    {"Auto Situps + Punch", "Situps", "repTime", 0, "Punch"},
-    {"Auto Handstands + Punch", "Handstands", "repTime", 0, "Punch"}
-}
+local _call42 = _call40:NewSection({
+    Title = "Frozen Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
 
-for _, combo in ipairs(combos) do
-    local title, tool, repName, repValue, punchTool = unpack(combo)
-    _call23:NewToggle({
-        Title = title,
-        Default = false,
-        Callback = function(Value)
-            _G[title:gsub("%s", "")] = Value
-            local player = game.Players.LocalPlayer
+local _call43 = _call40:NewSection({
+    Title = "Misthyc Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
 
-            if Value then
-                task.spawn(function()
-                    while _G[title:gsub("%s", "")] do
-                        equipToolFast(player, tool, repName, repValue)
-                        player.muscleEvent:FireServer("rep")
-                        fastPunch(player)
-                        task.wait()
-                    end
-                end)
-            else
-                local char = player.Character
-                for _, t in ipairs({tool, punchTool}) do
-                    local eq = char:FindFirstChild(t)
-                    if eq then eq.Parent = player.Backpack end
-                end
-            end
-        end,
-        Description = "Automatiza " .. title
-    })
-end
+local _call44 = _call40:NewSection({
+    Title = "Inferno Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+local _call45 = _call40:NewSection({
+    Title = "Legend Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+local _call46 = _call40:NewSection({
+    Title = "King Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+local _call47 = _call40:NewSection({
+    Title = "Jungle Portal",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+--- Seccion de entrenamiento
+
+local _call51 = _call50:NewSection({
+    Title = "Strength",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+local _call52 = _call50:NewSection({
+    Title = "Rebirth",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+local _call53 = _call50:NewSection({
+    Title = "Kills",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+local _call54 = _call50:NewSection({
+    Title = "Brawls",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
+
+--- Sección de Entrenamiento
+
+local _call61 = _call60:NewSection({
+    Title = "Player Stats",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Left",
+})
+
+local _call62 = _call60:NewSection({
+    Title = "Me Stats",
+    Icon = "rbxassetid://109333634069157",
+    Position = "Right",
+})
