@@ -350,11 +350,10 @@ local _call13 = _call10:NewSection({
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Variables principales
-local followActive = false
-local followTarget = nil
+local following = false
+local selectedPlayer = nil
 
--- 📌 Función para teletransportarte detrás del jugador seleccionado
+-- 📌 Función: TP detrás del jugador
 local function followPlayer(targetPlayer)
     local myChar = LocalPlayer.Character
     local targetChar = targetPlayer.Character
@@ -369,46 +368,26 @@ local function followPlayer(targetPlayer)
     end
 end
 
--- 📌 Generar lista dinámica de jugadores con formato "Username | DisplayName"
-local function getPlayerList()
-    local list = {}
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            table.insert(list, plr.Name .. " | " .. plr.DisplayName)
-        end
-    end
-    return list
-end
-
--- 📌 Dropdown de selección de jugador
-local selectedPlayer = nil
-
-local followDropdown = _call13:NewDropdown({
-    Title = "Select Player to Follow",
-    Values = getPlayerList(),
-    Multi = false,
-    Default = "",
-    Callback = function(selected)
-        if not selected or selected == "" then return end
-
-        -- Extraer username real del formato "Username | DisplayName"
+-- 📌 Crear dropdown vacío
+local followDropdown = _call13:AddDropdown("Select Player", function(selected)
+    if selected and selected ~= "" then
         local username = string.split(selected, " | ")[1]
         local target = Players:FindFirstChild(username)
 
         if target then
             selectedPlayer = target
             game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "🎯 Target Selected",
-                Text = "Now following: " .. target.DisplayName .. " (" .. target.Name .. ")",
+                Title = "🎯 Player Selected",
+                Text = "Following: " .. target.DisplayName .. " (" .. target.Name .. ")",
                 Duration = 3
             })
         else
             selectedPlayer = nil
         end
     end
-})
+end)
 
--- 📌 Actualizar dropdown dinámicamente cuando jugadores entran/salen
+-- 📌 Función para refrescar el dropdown dinámicamente
 local function refreshDropdown()
     followDropdown:Clear()
     for _, player in ipairs(Players:GetPlayers()) do
@@ -418,13 +397,16 @@ local function refreshDropdown()
     end
 end
 
+-- Inicializar lista
+refreshDropdown()
+
+-- Actualizar cuando jugadores entren o salgan
 Players.PlayerAdded:Connect(refreshDropdown)
 Players.PlayerRemoving:Connect(function(player)
     refreshDropdown()
-    -- Si se fue el jugador que seguías
     if selectedPlayer and player == selectedPlayer then
+        following = false
         selectedPlayer = nil
-        followActive = false
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "⚠️ Player Left",
             Text = "Stopped following (player left).",
@@ -433,54 +415,62 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- 📌 Toggle para activar/desactivar el seguimiento automático
-_call13:NewToggle({
-    Title = "Auto Teleport / Follow Player",
-    Default = false,
-    Callback = function(state)
-        followActive = state
-        if state then
-            if not selectedPlayer then
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "⚠️ No Target Selected",
-                    Text = "Please select a player first.",
-                    Duration = 3
-                })
-                followActive = false
-                return
-            end
-
-            task.spawn(function()
-                while followActive and selectedPlayer and task.wait(0.1) do
-                    local target = Players:FindFirstChild(selectedPlayer.Name)
-                    if target then
-                        followPlayer(target)
-                    else
-                        followActive = false
-                        selectedPlayer = nil
-                        game:GetService("StarterGui"):SetCore("SendNotification", {
-                            Title = "⚠️ Target Lost",
-                            Text = "Player left the game.",
-                            Duration = 3
-                        })
-                        break
-                    end
-                end
-            end)
-        else
+-- 🟢 Toggle: Seguir al jugador seleccionado
+_call13:AddSwitch("Follow Player", function(state)
+    if state then
+        if not selectedPlayer then
             game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "⛔ Follow Disabled",
-                Text = "You stopped following.",
+                Title = "⚠️ No Player Selected",
+                Text = "Please select a player first.",
                 Duration = 3
             })
+            return
         end
-    end
-})
 
--- 📌 Reintenta seguir al respawnear
+        following = true
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "✅ Following Enabled",
+            Text = "Now following " .. selectedPlayer.DisplayName,
+            Duration = 3
+        })
+
+        task.spawn(function()
+            while following and selectedPlayer and task.wait(0.1) do
+                local target = Players:FindFirstChild(selectedPlayer.Name)
+                if target then
+                    followPlayer(target)
+                else
+                    following = false
+                    selectedPlayer = nil
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "⚠️ Target Left",
+                        Text = "Player left the game.",
+                        Duration = 3
+                    })
+                    break
+                end
+            end
+        end)
+    end
+end)
+
+-- 🔴 Toggle: Detener el seguimiento
+_call13:AddSwitch("Stop Follow", function(state)
+    if state then
+        following = false
+        selectedPlayer = nil
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "⛔ Follow Stopped",
+            Text = "You stopped following.",
+            Duration = 3
+        })
+    end
+end)
+
+-- 📌 Reintentar cuando respawnees
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
-    if followActive and selectedPlayer then
+    if following and selectedPlayer then
         local target = Players:FindFirstChild(selectedPlayer.Name)
         if target then
             followPlayer(target)
