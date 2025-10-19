@@ -76,10 +76,269 @@ local _call11 = _call10:NewSection({
     Position = "Left",
 })
 
+_call11:NewToggle({
+    Title = "God Mode Brawl",
+    Default = false,
+    Callback = function(State)
+        if State then
+            task.spawn(function()
+                while State do
+                    game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
+                    task.wait(0)
+                end
+            end)
+        end
+    end,
+})
+
+_call11:NewToggle({
+    Title = "Auto Win Brawls",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoWinBrawl = bool
+        
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+
+        -- Equip Punch Tool
+        local function equipPunch()
+            if not getgenv().autoWinBrawl then return end
+            local character = player.Character
+            if not character then return false end
+            if character:FindFirstChild("Punch") then return true end
+            local backpack = player.Backpack
+            if not backpack then return false end
+            for _, tool in pairs(backpack:GetChildren()) do
+                if tool.ClassName == "Tool" and tool.Name == "Punch" then
+                    tool.Parent = character
+                    return true
+                end
+            end
+            return false
+        end
+
+        local function isValidTarget(target)
+            if not target or not target.Parent then return false end
+            if target == player then return false end
+            local character = target.Character
+            if not character then return false end
+            local humanoid = character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return false end
+            if humanoid:GetState() == Enum.HumanoidStateType.Dead then return false end
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if not root then return false end
+            return true
+        end
+
+        local function isLocalReady()
+            local char = player.Character
+            if not char then return false end
+            local hum = char:FindFirstChild("Humanoid")
+            if not hum or hum.Health <= 0 then return false end
+            return (char:FindFirstChild("LeftHand") or char:FindFirstChild("RightHand"))
+        end
+
+        local function safeTouch(target, localPart)
+            if not target or not localPart then return end
+            pcall(function()
+                firetouchinterest(target, localPart, 0)
+                task.wait(0.01)
+                firetouchinterest(target, localPart, 1)
+            end)
+        end
+
+        -- Join brawl automatically
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.5) do
+                if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                    game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                    player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                end
+            end
+        end)
+
+        -- Keep punch equipped
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.5) do
+                equipPunch()
+            end
+        end)
+
+        -- Punch constantly
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.1) do
+                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
+                    pcall(function() player.muscleEvent:FireServer("punch", "rightHand") end)
+                    pcall(function() player.muscleEvent:FireServer("punch", "leftHand") end)
+                end
+            end
+        end)
+
+        -- Attack others
+        task.spawn(function()
+            while getgenv().autoWinBrawl and task.wait(0.05) do
+                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
+                    local char = player.Character
+                    local left, right = char:FindFirstChild("LeftHand"), char:FindFirstChild("RightHand")
+                    for _, target in pairs(Players:GetPlayers()) do
+                        if not getgenv().autoWinBrawl then break end
+                        pcall(function()
+                            if isValidTarget(target) then
+                                local root = target.Character:FindFirstChild("HumanoidRootPart")
+                                if left then safeTouch(root, left) end
+                                if right then safeTouch(root, right) end
+                            end
+                        end)
+                        task.wait(0.01)
+                    end
+                end
+            end
+        end)
+
+        -- Recovery system
+        task.spawn(function()
+            local lastCount, stuck = 0, 0
+            while getgenv().autoWinBrawl and task.wait(1) do
+                local current = #Players:GetPlayers()
+                if current ~= lastCount then
+                    stuck = 0
+                    lastCount = current
+                else
+                    stuck += 1
+                    if stuck > 5 then
+                        stuck = 0
+                        pcall(function()
+                            local char = player.Character
+                            if char and char:FindFirstChild("Punch") then
+                                char.Punch.Parent = player.Backpack
+                                task.wait(0.1)
+                                equipPunch()
+                            else
+                                equipPunch()
+                            end
+                        end)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+_call11:NewToggle({
+    Title = "Auto Join Brawls",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoJoinBrawl = bool
+        if bool then
+            task.spawn(function()
+                while getgenv().autoJoinBrawl and task.wait(0.5) do
+                    if not getgenv().autoJoinBrawl then break end
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
+                            game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+                            player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
 local _call12 = _call10:NewSection({
     Title = "Auto Snacks",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
+})
+
+_call12:NewToggle({
+    Title = "Auto Eat Every Snacks",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoEatSnacks = bool
+        if bool then
+            task.spawn(function()
+                while getgenv().autoEatSnacks and task.wait(2) do
+                    if not getgenv().autoEatSnacks then break end
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        local backpack = player:WaitForChild("Backpack")
+                        local character = player.Character or player.CharacterAdded:Wait()
+                        local boosts = {
+                            "ULTRA Shake",
+                            "TOUGH Bar",
+                            "Protein Shake",
+                            "Energy Shake",
+                            "Protein Bar",
+                            "Energy Bar",
+                            "Tropical Shake"
+                        }
+
+                        for _, boostName in ipairs(boosts) do
+                            local boost = backpack:FindFirstChild(boostName)
+                            while boost do
+                                boost.Parent = character
+                                pcall(function() boost:Activate() end)
+                                task.wait(0)
+                                boost = backpack:FindFirstChild(boostName)
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+_call12:NewToggle({
+    Title = "Auto Eat Egg (30 Min)",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoEatEgg30 = bool
+        if bool then
+            task.spawn(function()
+                while getgenv().autoEatEgg30 and task.wait(1800) do
+                    if not getgenv().autoEatEgg30 then break end
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        local backpack = player:WaitForChild("Backpack")
+                        local character = player.Character or player.CharacterAdded:Wait()
+                        local egg = backpack:FindFirstChild("Protein Egg")
+                        if egg then
+                            egg.Parent = character
+                            pcall(function() egg:Activate() end)
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
+})
+
+_call12:NewToggle({
+    Title = "Auto Eat Egg (1 Hour)",
+    Default = false,
+    Callback = function(bool)
+        getgenv().autoEatEgg60 = bool
+        if bool then
+            task.spawn(function()
+                while getgenv().autoEatEgg60 and task.wait(3600) do
+                    if not getgenv().autoEatEgg60 then break end
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        local backpack = player:WaitForChild("Backpack")
+                        local character = player.Character or player.CharacterAdded:Wait()
+                        local egg = backpack:FindFirstChild("Protein Egg")
+                        if egg then
+                            egg.Parent = character
+                            pcall(function() egg:Activate() end)
+                        end
+                    end)
+                end
+            end)
+        end
+    end,
 })
 
 local _call13 = _call10:NewSection({
@@ -88,10 +347,327 @@ local _call13 = _call10:NewSection({
     Position = "Left",
 })
 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local following = false
+local followTarget = nil
+
+-- 📌 Función: TP detrás del jugador
+local function followPlayer(targetPlayer)
+    local myChar = LocalPlayer.Character
+    local targetChar = targetPlayer.Character
+
+    if not (myChar and targetChar) then return end
+    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+    local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+
+    if myHRP and targetHRP then
+        local followPos = targetHRP.Position - (targetHRP.CFrame.LookVector * 3)
+        myHRP.CFrame = CFrame.new(followPos, targetHRP.Position)
+    end
+end
+
+-- 📌 Dropdown dinámico de jugadores
+local followDropdown = _call13:NewDropdown({
+    Title = "Teleport player",
+    Values = {},
+    Multi = false,
+    Default = "",
+    Callback = function(selectedDisplayName)
+        if selectedDisplayName and selectedDisplayName ~= "" then
+            local target = nil
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr.DisplayName == selectedDisplayName then
+                    target = plr
+                    break
+                end
+            end
+
+            if target then
+                followTarget = target.Name
+                following = true
+                print("✅ Started following:", target.Name)
+                followPlayer(target)
+            end
+        end
+    end
+})
+
+-- 📌 Inicializar lista con DisplayNames
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        followDropdown:Add(player.DisplayName)
+    end
+end
+
+-- 📌 Actualizar lista cuando entren jugadores
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer then
+        followDropdown:Add(player.DisplayName)
+    end
+end)
+
+-- 📌 Actualizar lista cuando se vayan jugadores
+Players.PlayerRemoving:Connect(function(player)
+    followDropdown:Clear()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            followDropdown:Add(plr.DisplayName)
+        end
+    end
+
+    if followTarget == player.Name then
+        followTarget = nil
+        following = false
+    end
+end)
+
+-- 📌 Botón para dejar de seguir
+_call13:NewButton({
+    Title = "Do not follow",
+    Callback = function()
+        following = false
+        followTarget = nil
+        print("⛔ Stopped following")
+    end
+})
+
+-- 📌 Loop de seguimiento automático
+task.spawn(function()
+    while task.wait(0.01) do
+        if following and followTarget then
+            local target = Players:FindFirstChild(followTarget)
+            if target then
+                followPlayer(target)
+            else
+                following = false
+                followTarget = nil
+            end
+        end
+    end
+end)
+
+-- 📌 Reintentar cuando respawnees
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    if following and followTarget then
+        local target = Players:FindFirstChild(followTarget)
+        if target then
+            followPlayer(target)
+        end
+    end
+end)
+
+-- ⚡ AUTO GROUND SLAM
+_call13:NewToggle({
+    Title = "Auto Ground Slam",
+    Default = false,
+    Callback = function(state)
+        getgenv().godDamageActive = state
+        if state then
+            task.spawn(function()
+                while getgenv().godDamageActive do
+                    local player = LocalPlayer
+                    local groundSlam = player.Backpack:FindFirstChild("Ground Slam") or (player.Character and player.Character:FindFirstChild("Ground Slam"))
+
+                    if groundSlam then
+                        if groundSlam.Parent == player.Backpack then
+                            groundSlam.Parent = player.Character
+                        end
+                        if groundSlam:FindFirstChild("attackTime") then
+                            groundSlam.attackTime.Value = 0
+                        end
+                        player.muscleEvent:FireServer("slam")
+                        groundSlam:Activate()
+                    end
+
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+-- 🧭 BOTÓN DE TELETRANSPORTE
+_call13:NewButton({
+    Title = "Empty",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        humanoidRootPart.CFrame = CFrame.new(-241.12, -369.25, -396.96)
+
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Teletransporte",
+            Text = "Teleported to Coordenadas (-241, -369, -396)",
+            Duration = 3
+        })
+    end
+})
+
 local _call14 = _call10:NewSection({
     Title = "OP Things Farm",
     Icon = "rbxassetid://109333634069157",
     Position = "Right",
+})
+
+_call14:NewToggle({
+    Title = "Lock Position",
+    Callback = function(Value)
+        if Value then
+            local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+            getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
+                if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
+                end
+            end)
+        else
+            if getgenv().posLock then
+                getgenv().posLock:Disconnect()
+                getgenv().posLock = nil
+            end
+        end
+    end
+})
+
+_call14:NewToggle({
+    Title = "Anti Knockback",
+    Callback = function(Value)
+        local playerName = game.Players.LocalPlayer.Name
+        local rootPart = game.Workspace:FindFirstChild(playerName):FindFirstChild("HumanoidRootPart")
+        
+        if Value then
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.P = 1250
+            bodyVelocity.Parent = rootPart
+        else
+            local existingVelocity = rootPart:FindFirstChild("BodyVelocity")
+            if existingVelocity and existingVelocity.MaxForce == Vector3.new(100000, 0, 100000) then
+                existingVelocity:Destroy()
+            end
+        end
+    end
+})
+
+-- 🧹 Delete All Frames
+_call14:NewToggle({
+    Title = "Delete All Frames",
+    Callback = function(state)
+        local rSto = game:GetService("ReplicatedStorage")
+        for _, obj in pairs(rSto:GetChildren()) do
+            if obj.Name:match("Frame$") and obj:IsA("GuiObject") then
+                if state then
+                    obj:Destroy()
+                end
+            end
+        end
+    end
+})
+
+_call14:NewButton({
+    Title = "Anti AFK",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+
+        -- Si ya está activo, desconecta
+        if getgenv().antiAFKConnection then
+            getgenv().antiAFKConnection:Disconnect()
+            getgenv().antiAFKConnection = nil
+            return
+        end
+
+        -- Conectar Anti-AFK ligero
+        getgenv().antiAFKConnection = LocalPlayer.Idled:Connect(function()
+            local VirtualUser = game:GetService("VirtualUser")
+            -- Simular solo un click pequeño, suficiente para reiniciar AFK
+            VirtualUser:ClickButton1(Vector2.new())
+        end)
+    end,
+})
+
+_call14:NewButton({
+    Title = "Anti-AFK GUI",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local RunService = game:GetService("RunService")
+
+        -- Si ya existe, desconectamos y eliminamos
+        if getgenv().antiAFKGUIConnection then
+            getgenv().antiAFKGUIConnection:Disconnect()
+            getgenv().antiAFKGUIConnection = nil
+            if game.CoreGui:FindFirstChild("AntiAFK_GUI") then
+                game.CoreGui:FindFirstChild("AntiAFK_GUI"):Destroy()
+            end
+            return
+        end
+
+        -- Crear GUI
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "AntiAFK_GUI"
+        screenGui.ResetOnSpawn = false
+        screenGui.Parent = game.CoreGui
+
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0, 220, 0, 120)
+        frame.Position = UDim2.new(0, 50, 0, 50)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BorderSizePixel = 2
+        frame.BorderColor3 = Color3.fromRGB(25, 25, 25)
+        frame.Parent = screenGui
+
+        -- Hacer draggable
+        frame.Active = true
+        frame.Draggable = true
+
+        -- Título
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, 0, 0, 30)
+        title.Position = UDim2.new(0, 0, 0, 0)
+        title.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        title.BorderSizePixel = 2
+        title.BorderColor3 = Color3.fromRGB(25, 25, 25)
+        title.Text = "Galaxy XVI"
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.TextScaled = true
+        title.TextWrapped = true
+        title.Font = Enum.Font.SourceSansBold
+        title.Parent = frame
+
+        -- Información
+        local infoLabel = Instance.new("TextLabel")
+        infoLabel.Size = UDim2.new(1, -10, 1, -40)
+        infoLabel.Position = UDim2.new(0, 5, 0, 35)
+        infoLabel.BackgroundTransparency = 1
+        infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        infoLabel.TextScaled = true
+        infoLabel.TextWrapped = true
+        infoLabel.Text = "Anti-AFK Activo"
+        infoLabel.Font = Enum.Font.SourceSans
+        infoLabel.Parent = frame
+
+        -- Variables de sesión
+        local startTime = tick()
+        local fps = 0
+
+        -- Conectar Anti-AFK y actualizar GUI
+        getgenv().antiAFKGUIConnection = RunService.RenderStepped:Connect(function(deltaTime)
+            fps = math.floor(1 / deltaTime)
+            local sessionTime = tick() - startTime
+            local minutes = math.floor(sessionTime / 60)
+            local seconds = math.floor(sessionTime % 60)
+            infoLabel.Text = string.format("Anti-AFK Activo\nTiempo: %02d:%02d\nFPS: %d", minutes, seconds, fps)
+        end)
+
+        LocalPlayer.Idled:Connect(function()
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:ClickButton1(Vector2.new())
+        end)
+    end,
 })
 
 --- Sección de Entrenamiento
