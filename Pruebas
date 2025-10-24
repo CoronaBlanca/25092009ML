@@ -1,159 +1,83 @@
--- DESOFUSCADOR PARA DELTA EXECUTOR
--- =================================
+--// Configuración
+local webhooks = {
+    Rebirths = "https://discord.com/api/webhooks/1430782885668851814/UPAdeg0ouObLOg84GHdhPC8gbyEMpFqhTwTARtMRSfKkKwHSF38-Bhsnl7bCgwgj7rqz",
+    Kills = "https://discord.com/api/webhooks/1430782758052954223/l8n-ANnplP1G5adOmHrXBBFsRq7ezwA00oXRcBrGlXDZULM-D3AnGhjbY7mZ1u8RXE1D",
+    Strength = "https://discord.com/api/webhooks/1430782119738867724/Xxp2_XheCEVz3Ot3a-NLW6jweSf5w3r1BMtqyKu3C3M3Z96z2lsPsrpYXtDKJawPKsmJ",
+    MuscleKing = "https://discord.com/api/webhooks/1430783158286028841/3QAZmZL5WG37hCk1NrIKzjrG-MQeWNW3ux8irXqf3EC9suzQlRqM6bZZ2NsGQS4V3bPf",
+    Brawls = "https://discord.com/api/webhooks/1430783011195977819/KtVFchlpGM6EXsIdN0QFywF3Hh4DV_Oa4xNeipjd2JeeOqMh4RkzlDoyYSqCbUh3kAFO"
+}
 
--- ⚙️ CONFIGURACIÓN
-local WEBHOOK_URL = "https://discordapp.com/api/webhooks/1428150779838988299/dCT_aUK_Xdufmurz8t7cd5qtjmKljVYJ5UB2c-UvhkB-OsaJ64VGsXI-XRwR9wlZ_JKT" -- Pon tu webhook de Discord
-local GITHUB_RAW_URL = "https://raw.githubusercontent.com/CoronaBlanca/2198832473482/refs/heads/main/dxsxfxscxtxr%20By%20Shxryx"
+--// Servicios
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
 
--- 📊 Captura
-local captured_code = {}
+--// Tablas de Leaderboards
+local boards = {
+    rebirthsLeaderboard = "Rebirths",
+    killsLeaderboard = "Kills",
+    strengthLeaderboard = "Strength",
+    muscleKingLeaderboard = "MuscleKing",
+    brawlsLeaderboard = "Brawls"
+}
 
-print("🔍 Desofuscador Delta iniciado...")
-
--- 🪝 HOOK DE LOADSTRING (Delta usa loadstring estándar)
-local old_loadstring = loadstring
-loadstring = function(code, ...)
-    print("✅ ¡Código interceptado! Tamaño:", #code, "bytes")
-    table.insert(captured_code, code)
-    return old_loadstring(code, ...)
-end
-
--- 📤 ENVIAR A DISCORD (Delta usa request)
-local function send_to_discord(content)
-    print("📤 Enviando a Discord...")
-    
-    -- Limitar tamaño (Discord máximo ~2000 caracteres)
-    local preview = content
-    if #content > 3900 then
-        preview = content:sub(1, 3900) .. "\n\n... (código muy largo, ver archivo)"
-    end
-    
-    local payload = game:GetService("HttpService"):JSONEncode({
-        username = "Delta Deobfuscator",
-        embeds = {{
-            title = "🔓 Código Desofuscado",
-            description = "```lua\n" .. preview .. "\n```",
-            color = 5814783,
-            footer = {
-                text = "Delta Executor • " .. os.date("%H:%M:%S")
-            }
-        }}
+--// Función para enviar embeds
+local function sendToWebhook(webhookUrl, title, data)
+    if not webhookUrl or webhookUrl == "" then return end
+    local embed = {
+        ["title"] = "🏆 " .. title .. " Leaderboard",
+        ["description"] = data,
+        ["color"] = 0xFFD700,
+        ["footer"] = { ["text"] = "Delta Executor | Sherya System" },
+        ["timestamp"] = DateTime.now():ToIsoDate()
+    }
+    local payload = HttpService:JSONEncode({
+        ["username"] = "Leaderboard Bot",
+        ["embeds"] = { embed }
     })
-    
-    -- Delta Executor usa 'request'
-    local success, response = pcall(function()
-        return request({
-            Url = WEBHOOK_URL,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = payload
-        })
-    end)
-    
-    if success and response.StatusCode == 204 then
-        print("✅ Enviado a Discord correctamente")
-        return true
+    request({
+        Url = webhookUrl,
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = payload
+    })
+end
+
+--// Procesar los leaderboards
+for boardName, boardLabel in pairs(boards) do
+    local leaderboard = Workspace:FindFirstChild(boardName)
+    local lines = {}
+    local place = 1
+
+    if leaderboard then
+        local boardPart = leaderboard:FindFirstChild("leaderboardPart")
+        if boardPart then
+            local gui = boardPart:FindFirstChild("leaderboardGui")
+            if gui then
+                local playerList = gui:FindFirstChild("playerList")
+                if playerList then
+                    local innerFrame = playerList:FindFirstChild("innerFrame")
+                    if innerFrame then
+                        for _, entry in ipairs(innerFrame:GetChildren()) do
+                            if entry:IsA("Frame") and entry.Name == "playerEntry" then
+                                local nameLabel = entry:FindFirstChild("nameLabel")
+                                local amountLabel = entry:FindFirstChild("amountLabel")
+                                local username = nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text or "N/A"
+                                local amount = amountLabel and amountLabel:IsA("TextLabel") and amountLabel.Text or "N/A"
+                                table.insert(lines, string.format("**%d | User:** %s — **Cantidad:** %s", place, username, amount))
+                                place += 1
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if #lines > 0 then
+        local message = table.concat(lines, "\n")
+        sendToWebhook(webhooks[boardLabel], boardLabel, message)
     else
-        warn("❌ Error enviando:", response and response.StatusCode or "desconocido")
-        return false
+        sendToWebhook(webhooks[boardLabel], boardLabel, "No se encontró información en el leaderboard.")
     end
-end
-
--- 💾 GUARDAR ARCHIVO
-local function save_file(content)
-    local filename = "deobfuscated_" .. os.time() .. ".lua"
-    
-    if writefile then
-        writefile(filename, content)
-        print("💾 Guardado en workspace:", filename)
-        return true
-    else
-        warn("⚠️ writefile no disponible en Delta")
-        return false
-    end
-end
-
--- 🚀 DESCARGAR CÓDIGO
-print("📥 Descargando desde GitHub...")
-
-local success_download, downloaded_code = pcall(function()
-    return game:HttpGet(GITHUB_RAW_URL, true)
-end)
-
-if not success_download then
-    warn("❌ Error descargando:", downloaded_code)
-    warn("💡 Verifica que el link sea correcto y público")
-    return
-end
-
-print("✅ Descargado:", #downloaded_code, "bytes")
-
--- ⚡ EJECUTAR
-print("⚡ Ejecutando código ofuscado...")
-
-local success_exec, error_msg = pcall(function()
-    loadstring(downloaded_code)()
-end)
-
-if not success_exec then
-    warn("⚠️ Error al ejecutar:", error_msg)
-    print("💡 Esto es normal si el código necesita un contexto específico")
-end
-
--- ⏳ ESPERAR CAPTURA
-wait(2)
-
--- 📋 PROCESAR RESULTADOS
-print("\n" .. string.rep("=", 50))
-print("📊 RESULTADOS:")
-print(string.rep("=", 50))
-
-local final_output = ""
-
-if #captured_code > 0 then
-    print("🎉 ¡ÉXITO! Se capturaron", #captured_code, "código(s)")
-    
-    for i, code in ipairs(captured_code) do
-        final_output = final_output .. "-- ========== CÓDIGO #" .. i .. " ==========\n"
-        final_output = final_output .. "-- Tamaño: " .. #code .. " caracteres\n"
-        final_output = final_output .. "-- Timestamp: " .. os.date() .. "\n\n"
-        final_output = final_output .. code .. "\n\n"
-    end
-    
-    print("📝 Código total capturado:", #final_output, "caracteres")
-else
-    print("⚠️ No se capturó código con loadstring")
-    print("💡 El script podría:")
-    print("   1. Ya estar desofuscado")
-    print("   2. No usar loadstring()")
-    print("   3. Usar otro método de ejecución")
-    
-    final_output = "-- NO SE CAPTURÓ CÓDIGO DINÁMICO\n"
-    final_output = final_output .. "-- Código original descargado:\n\n"
-    final_output = final_output .. downloaded_code
-end
-
--- 📤 ENVIAR Y GUARDAR
-print("\n📤 Enviando resultados...")
-
-local sent = send_to_discord(final_output)
-local saved = save_file(final_output)
-
--- 🏁 RESUMEN FINAL
-print("\n" .. string.rep("=", 50))
-print("🏁 PROCESO COMPLETADO")
-print(string.rep("=", 50))
-print("✉️  Webhook:", sent and "✅ Enviado" or "❌ Falló")
-print("💾 Archivo:", saved and "✅ Guardado" or "❌ No disponible")
-print(string.rep("=", 50))
-
-if sent then
-    print("✅ ¡Revisa tu canal de Discord!")
-elseif saved then
-    print("💡 Revisa la carpeta workspace de Delta")
-else
-    print("📋 Código capturado (cópialo manualmente):")
-    print(final_output:sub(1, 500) .. "...")
 end
