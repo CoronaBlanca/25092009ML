@@ -1,4 +1,4 @@
---// Configuración
+--// CONFIGURACIÓN
 local webhooks = {
     Rebirths = "https://discord.com/api/webhooks/1430782885668851814/UPAdeg0ouObLOg84GHdhPC8gbyEMpFqhTwTARtMRSfKkKwHSF38-Bhsnl7bCgwgj7rqz",
     Kills = "https://discord.com/api/webhooks/1430782758052954223/l8n-ANnplP1G5adOmHrXBBFsRq7ezwA00oXRcBrGlXDZULM-D3AnGhjbY7mZ1u8RXE1D",
@@ -7,12 +7,12 @@ local webhooks = {
     Brawls = "https://discord.com/api/webhooks/1430783011195977819/KtVFchlpGM6EXsIdN0QFywF3Hh4DV_Oa4xNeipjd2JeeOqMh4RkzlDoyYSqCbUh3kAFO"
 }
 
---// Servicios
+--// SERVICIOS
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local HttpService = game:GetService("HttpService")
 
---// Tablas de Leaderboards
+--// LEADERBOARDS
 local boards = {
     rebirthsLeaderboard = "Rebirths",
     killsLeaderboard = "Kills",
@@ -21,9 +21,12 @@ local boards = {
     brawlsLeaderboard = "Brawls"
 }
 
---// Función para enviar embeds
+--// ENVIAR EMBED A WEBHOOK
 local function sendToWebhook(webhookUrl, title, data)
-    if not webhookUrl or webhookUrl == "" then return end
+    if not webhookUrl or webhookUrl == "" then
+        warn("[⚠️] No webhook URL para " .. title)
+        return
+    end
     local embed = {
         ["title"] = "🏆 " .. title .. " Leaderboard",
         ["description"] = data,
@@ -43,41 +46,47 @@ local function sendToWebhook(webhookUrl, title, data)
     })
 end
 
---// Procesar los leaderboards
+--// BUSCAR FRAMES DE JUGADORES
+local function findFrames(parent)
+    local frames = {}
+    for _, obj in ipairs(parent:GetDescendants()) do
+        if obj:IsA("Frame") and obj.Name == "playerEntry" then
+            table.insert(frames, obj)
+        end
+    end
+    return frames
+end
+
+--// PROCESAR Y ENVIAR
 for boardName, boardLabel in pairs(boards) do
     local leaderboard = Workspace:FindFirstChild(boardName)
+    if not leaderboard then
+        warn("[❌] No encontrado: " .. boardName)
+        continue
+    end
+
+    local frames = findFrames(leaderboard)
+    if #frames == 0 then
+        warn("[⚠️] No se encontraron jugadores en " .. boardLabel)
+        sendToWebhook(webhooks[boardLabel], boardLabel, "Sin datos disponibles.")
+        continue
+    end
+
     local lines = {}
     local place = 1
 
-    if leaderboard then
-        local boardPart = leaderboard:FindFirstChild("leaderboardPart")
-        if boardPart then
-            local gui = boardPart:FindFirstChild("leaderboardGui")
-            if gui then
-                local playerList = gui:FindFirstChild("playerList")
-                if playerList then
-                    local innerFrame = playerList:FindFirstChild("innerFrame")
-                    if innerFrame then
-                        for _, entry in ipairs(innerFrame:GetChildren()) do
-                            if entry:IsA("Frame") and entry.Name == "playerEntry" then
-                                local nameLabel = entry:FindFirstChild("nameLabel")
-                                local amountLabel = entry:FindFirstChild("amountLabel")
-                                local username = nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text or "N/A"
-                                local amount = amountLabel and amountLabel:IsA("TextLabel") and amountLabel.Text or "N/A"
-                                table.insert(lines, string.format("**%d | User:** %s — **Cantidad:** %s", place, username, amount))
-                                place += 1
-                            end
-                        end
-                    end
-                end
-            end
-        end
+    for _, entry in ipairs(frames) do
+        local nameLabel = entry:FindFirstChild("nameLabel")
+        local amountLabel = entry:FindFirstChild("amountLabel")
+
+        local username = nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text or "N/A"
+        local amount = amountLabel and amountLabel:IsA("TextLabel") and amountLabel.Text or "N/A"
+
+        table.insert(lines, string.format("%d | %s : %s", place, username, amount))
+        place += 1
     end
 
-    if #lines > 0 then
-        local message = table.concat(lines, "\n")
-        sendToWebhook(webhooks[boardLabel], boardLabel, message)
-    else
-        sendToWebhook(webhooks[boardLabel], boardLabel, "No se encontró información en el leaderboard.")
-    end
+    local message = table.concat(lines, "\n")
+    sendToWebhook(webhooks[boardLabel], boardLabel, message)
+    print("[✅] Enviado leaderboard de " .. boardLabel .. " con " .. #lines .. " jugadores.")
 end
