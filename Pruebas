@@ -30,8 +30,8 @@ local function sendToWebhook(webhookUrl, title, data)
     local embed = {
         ["title"] = "🏆 " .. title .. " Leaderboard",
         ["description"] = data,
-        ["color"] = 0xFFD700,
-        ["footer"] = { ["text"] = "Delta Executor | Sherya System" },
+        ["color"] = 0x483D8B,
+        ["footer"] = { ["text"] = "On Top | Sherya System" },
         ["timestamp"] = DateTime.now():ToIsoDate()
     }
     local payload = HttpService:JSONEncode({
