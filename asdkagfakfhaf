@@ -1,826 +1,249 @@
--- Servicios útiles
-local Players = game:GetService("Players")
-
--- Jugador local (por si la UI lo usa internamente)
-local LocalPlayer = Players.LocalPlayer
-if LocalPlayer then
-    LocalPlayer:FindFirstChild("leaderstats")
-end
-
--- Cargar la interfaz desde GitHub
-local _call1 = loadstring(game:HttpGet("https://raw.githubusercontent.com/CoronaBlanca/25092009UI/refs/heads/main/Txkxttk%20L%20By%20Shxryx"))().new({
-    Logo = "https://create.roblox.com/store/asset/134528145536607/Galaxy-Icon",
-    Title = "Galaxy VXI | New UI Future Updates",
-    Description = "https://discord.gg/zYrg2qPjTp",
-    Keybind = Enum.KeyCode.LeftControl,
-})
-
---Tabs--
-
-local _call10 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Main interface",
-    Title = "Main",
-})
-local _call20 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Tool farm",
-    Title = "Farm",
-})
-local _call30 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Extra options",
-    Title = "Misc",
-})
-local _call40 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Everyone Gyms",
-    Title = "Gyms",
-})
-local _call50 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Calculate everything",
-    Title = "Calculator",
-})
-local _call60 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Shows statistics",
-    Title = "Stats",
-})
-local _call70 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Kill multiple players",
-    Title = "Killer",
-})
-local _call80 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Crystal Pets & Auras",
-    Title = "Crystal",
-})
-local _call90 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Different places",
-    Title = "Teleport",
-})
-local _call100 = _call1:NewTab({
-    Icon = "rbxassetid://134528145536607",
-    Description = "Crédits | Discord",
-    Title = "Credits",
-})
-
---- Sección de Entrenamiento
-
-local _call11 = _call10:NewSection({
-    Title = "Auto Brawls",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-_call11:NewToggle({
-    Title = "God Mode Brawl",
-    Default = false,
-    Callback = function(State)
-        if State then
-            task.spawn(function()
-                while State do
-                    game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
-                    task.wait(0)
-                end
-            end)
-        end
-    end,
-})
-
-_call11:NewToggle({
-    Title = "Auto Win Brawls",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoWinBrawl = bool
-        
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-
-        -- Equip Punch Tool
-        local function equipPunch()
-            if not getgenv().autoWinBrawl then return end
-            local character = player.Character
-            if not character then return false end
-            if character:FindFirstChild("Punch") then return true end
-            local backpack = player.Backpack
-            if not backpack then return false end
-            for _, tool in pairs(backpack:GetChildren()) do
-                if tool.ClassName == "Tool" and tool.Name == "Punch" then
-                    tool.Parent = character
-                    return true
-                end
-            end
-            return false
-        end
-
-        local function isValidTarget(target)
-            if not target or not target.Parent then return false end
-            if target == player then return false end
-            local character = target.Character
-            if not character then return false end
-            local humanoid = character:FindFirstChild("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then return false end
-            if humanoid:GetState() == Enum.HumanoidStateType.Dead then return false end
-            local root = character:FindFirstChild("HumanoidRootPart")
-            if not root then return false end
-            return true
-        end
-
-        local function isLocalReady()
-            local char = player.Character
-            if not char then return false end
-            local hum = char:FindFirstChild("Humanoid")
-            if not hum or hum.Health <= 0 then return false end
-            return (char:FindFirstChild("LeftHand") or char:FindFirstChild("RightHand"))
-        end
-
-        local function safeTouch(target, localPart)
-            if not target or not localPart then return end
-            pcall(function()
-                firetouchinterest(target, localPart, 0)
-                task.wait(0.01)
-                firetouchinterest(target, localPart, 1)
-            end)
-        end
-
-        -- Join brawl automatically
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
-                    game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                    player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
-                end
-            end
-        end)
-
-        -- Keep punch equipped
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.5) do
-                equipPunch()
-            end
-        end)
-
-        -- Punch constantly
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.1) do
-                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    pcall(function() player.muscleEvent:FireServer("punch", "rightHand") end)
-                    pcall(function() player.muscleEvent:FireServer("punch", "leftHand") end)
-                end
-            end
-        end)
-
-        -- Attack others
-        task.spawn(function()
-            while getgenv().autoWinBrawl and task.wait(0.05) do
-                if isLocalReady() and game.ReplicatedStorage.brawlInProgress.Value then
-                    local char = player.Character
-                    local left, right = char:FindFirstChild("LeftHand"), char:FindFirstChild("RightHand")
-                    for _, target in pairs(Players:GetPlayers()) do
-                        if not getgenv().autoWinBrawl then break end
-                        pcall(function()
-                            if isValidTarget(target) then
-                                local root = target.Character:FindFirstChild("HumanoidRootPart")
-                                if left then safeTouch(root, left) end
-                                if right then safeTouch(root, right) end
-                            end
-                        end)
-                        task.wait(0.01)
-                    end
-                end
-            end
-        end)
-
-        -- Recovery system
-        task.spawn(function()
-            local lastCount, stuck = 0, 0
-            while getgenv().autoWinBrawl and task.wait(1) do
-                local current = #Players:GetPlayers()
-                if current ~= lastCount then
-                    stuck = 0
-                    lastCount = current
-                else
-                    stuck += 1
-                    if stuck > 5 then
-                        stuck = 0
-                        pcall(function()
-                            local char = player.Character
-                            if char and char:FindFirstChild("Punch") then
-                                char.Punch.Parent = player.Backpack
-                                task.wait(0.1)
-                                equipPunch()
-                            else
-                                equipPunch()
-                            end
-                        end)
-                    end
-                end
-            end
-        end)
-    end
-})
-
-_call11:NewToggle({
-    Title = "Auto Join Brawls",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoJoinBrawl = bool
-        if bool then
-            task.spawn(function()
-                while getgenv().autoJoinBrawl and task.wait(0.5) do
-                    if not getgenv().autoJoinBrawl then break end
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if player.PlayerGui.gameGui.brawlJoinLabel.Visible then
-                            game.ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
-                            player.PlayerGui.gameGui.brawlJoinLabel.Visible = false
-                        end
-                    end)
-                end
-            end)
-        end
-    end,
-})
-
-local _call12 = _call10:NewSection({
-    Title = "Auto Snacks",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-_call12:NewToggle({
-    Title = "Auto Eat Every Snacks",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoEatSnacks = bool
-        if bool then
-            task.spawn(function()
-                while getgenv().autoEatSnacks and task.wait(2) do
-                    if not getgenv().autoEatSnacks then break end
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        local backpack = player:WaitForChild("Backpack")
-                        local character = player.Character or player.CharacterAdded:Wait()
-                        local boosts = {
-                            "ULTRA Shake",
-                            "TOUGH Bar",
-                            "Protein Shake",
-                            "Energy Shake",
-                            "Protein Bar",
-                            "Energy Bar",
-                            "Tropical Shake"
-                        }
-
-                        for _, boostName in ipairs(boosts) do
-                            local boost = backpack:FindFirstChild(boostName)
-                            while boost do
-                                boost.Parent = character
-                                pcall(function() boost:Activate() end)
-                                task.wait(0)
-                                boost = backpack:FindFirstChild(boostName)
-                            end
-                        end
-                    end)
-                end
-            end)
-        end
-    end,
-})
-
-_call12:NewToggle({
-    Title = "Auto Eat Egg (30 Min)",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoEatEgg30 = bool
-        if bool then
-            task.spawn(function()
-                while getgenv().autoEatEgg30 and task.wait(1800) do
-                    if not getgenv().autoEatEgg30 then break end
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        local backpack = player:WaitForChild("Backpack")
-                        local character = player.Character or player.CharacterAdded:Wait()
-                        local egg = backpack:FindFirstChild("Protein Egg")
-                        if egg then
-                            egg.Parent = character
-                            pcall(function() egg:Activate() end)
-                        end
-                    end)
-                end
-            end)
-        end
-    end,
-})
-
-_call12:NewToggle({
-    Title = "Auto Eat Egg (1 Hour)",
-    Default = false,
-    Callback = function(bool)
-        getgenv().autoEatEgg60 = bool
-        if bool then
-            task.spawn(function()
-                while getgenv().autoEatEgg60 and task.wait(3600) do
-                    if not getgenv().autoEatEgg60 then break end
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        local backpack = player:WaitForChild("Backpack")
-                        local character = player.Character or player.CharacterAdded:Wait()
-                        local egg = backpack:FindFirstChild("Protein Egg")
-                        if egg then
-                            egg.Parent = character
-                            pcall(function() egg:Activate() end)
-                        end
-                    end)
-                end
-            end)
-        end
-    end,
-})
-
-local _call13 = _call10:NewSection({
-    Title = "Extras",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
+-- Script de Teleport a Jugadores para Roblox
+-- Compatible con ejecutores como Solara
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
-local following = false
+-- Variables globales
 local selectedPlayer = nil
+local teleporting = false
+local connection = nil
 
--- 📌 Función: TP detrás del jugador
-local function followPlayer(targetPlayer)
-    local myChar = LocalPlayer.Character
-    local targetChar = targetPlayer.Character
+-- Crear GUI
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local PlayerDropdown = Instance.new("TextButton")
+local DropdownFrame = Instance.new("ScrollingFrame")
+local TeleportButton = Instance.new("TextButton")
+local StopButton = Instance.new("TextButton")
+local StatusLabel = Instance.new("TextLabel")
+local UICorner1 = Instance.new("UICorner")
+local UICorner2 = Instance.new("UICorner")
+local UICorner3 = Instance.new("UICorner")
+local UICorner4 = Instance.new("UICorner")
 
-    if not (myChar and targetChar) then return end
-    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-    local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
-
-    if myHRP and targetHRP then
-        local followPos = targetHRP.Position - (targetHRP.CFrame.LookVector * 3)
-        myHRP.CFrame = CFrame.new(followPos, targetHRP.Position)
-    end
+-- Proteger GUI
+if syn then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Name = "TeleportGUI_" .. tostring(math.random(1000, 9999))
+else
+    ScreenGui.Name = "TeleportGUI"
 end
 
--- 📌 Crear dropdown vacío
-local followDropdown = _call13:AddDropdown("Select Player", function(selected)
-    if selected and selected ~= "" then
-        local username = string.split(selected, " | ")[1]
-        local target = Players:FindFirstChild(username)
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-        if target then
-            selectedPlayer = target
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "🎯 Player Selected",
-                Text = "Following: " .. target.DisplayName .. " (" .. target.Name .. ")",
-                Duration = 3
-            })
-        else
-            selectedPlayer = nil
+-- Configurar MainFrame
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 300, 0, 300)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+UICorner1.CornerRadius = UDim.new(0, 10)
+UICorner1.Parent = MainFrame
+
+-- Título
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Teleport a Jugadores"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+
+-- Dropdown de jugadores
+PlayerDropdown.Parent = MainFrame
+PlayerDropdown.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+PlayerDropdown.BorderSizePixel = 0
+PlayerDropdown.Position = UDim2.new(0.05, 0, 0.17, 0)
+PlayerDropdown.Size = UDim2.new(0.9, 0, 0, 35)
+PlayerDropdown.Font = Enum.Font.Gotham
+PlayerDropdown.Text = "Seleccionar Jugador"
+PlayerDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerDropdown.TextSize = 14
+
+UICorner2.CornerRadius = UDim.new(0, 6)
+UICorner2.Parent = PlayerDropdown
+
+-- Frame del dropdown
+DropdownFrame.Parent = MainFrame
+DropdownFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+DropdownFrame.BorderSizePixel = 0
+DropdownFrame.Position = UDim2.new(0.05, 0, 0.32, 0)
+DropdownFrame.Size = UDim2.new(0.9, 0, 0, 0)
+DropdownFrame.Visible = false
+DropdownFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+DropdownFrame.ScrollBarThickness = 6
+
+-- Botón de teleport
+TeleportButton.Parent = MainFrame
+TeleportButton.BackgroundColor3 = Color3.fromRGB(60, 180, 75)
+TeleportButton.BorderSizePixel = 0
+TeleportButton.Position = UDim2.new(0.05, 0, 0.65, 0)
+TeleportButton.Size = UDim2.new(0.9, 0, 0, 35)
+TeleportButton.Font = Enum.Font.GothamBold
+TeleportButton.Text = "Iniciar Teleport"
+TeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TeleportButton.TextSize = 14
+
+UICorner3.CornerRadius = UDim.new(0, 6)
+UICorner3.Parent = TeleportButton
+
+-- Botón de detener
+StopButton.Parent = MainFrame
+StopButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+StopButton.BorderSizePixel = 0
+StopButton.Position = UDim2.new(0.05, 0, 0.78, 0)
+StopButton.Size = UDim2.new(0.9, 0, 0, 35)
+StopButton.Font = Enum.Font.GothamBold
+StopButton.Text = "Detener Teleport"
+StopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopButton.TextSize = 14
+StopButton.Visible = false
+
+UICorner4.CornerRadius = UDim.new(0, 6)
+UICorner4.Parent = StopButton
+
+-- Label de estado
+StatusLabel.Parent = MainFrame
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Position = UDim2.new(0, 0, 0.91, 0)
+StatusLabel.Size = UDim2.new(1, 0, 0, 25)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Text = "Listo"
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLabel.TextSize = 12
+
+-- Función para actualizar lista de jugadores
+local function UpdatePlayerList()
+    for _, child in pairs(DropdownFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
         end
     end
-end)
-
--- 📌 Función para refrescar el dropdown dinámicamente
-local function refreshDropdown()
-    followDropdown:Clear()
-    for _, player in ipairs(Players:GetPlayers()) do
+    
+    local yPos = 0
+    for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            followDropdown:Add(player.Name .. " | " .. player.DisplayName)
+            local PlayerButton = Instance.new("TextButton")
+            PlayerButton.Parent = DropdownFrame
+            PlayerButton.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+            PlayerButton.BorderSizePixel = 0
+            PlayerButton.Position = UDim2.new(0, 0, 0, yPos)
+            PlayerButton.Size = UDim2.new(1, -6, 0, 30)
+            PlayerButton.Font = Enum.Font.Gotham
+            PlayerButton.Text = player.Name
+            PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            PlayerButton.TextSize = 13
+            
+            PlayerButton.MouseButton1Click:Connect(function()
+                selectedPlayer = player
+                PlayerDropdown.Text = player.Name
+                DropdownFrame.Visible = false
+                DropdownFrame.Size = UDim2.new(0.9, 0, 0, 0)
+                StatusLabel.Text = "Jugador seleccionado: " .. player.Name
+            end)
+            
+            yPos = yPos + 32
         end
     end
+    
+    DropdownFrame.CanvasSize = UDim2.new(0, 0, 0, yPos)
 end
 
--- Inicializar lista
-refreshDropdown()
-
--- Actualizar cuando jugadores entren o salgan
-Players.PlayerAdded:Connect(refreshDropdown)
-Players.PlayerRemoving:Connect(function(player)
-    refreshDropdown()
-    if selectedPlayer and player == selectedPlayer then
-        following = false
-        selectedPlayer = nil
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "⚠️ Player Left",
-            Text = "Stopped following (player left).",
-            Duration = 3
-        })
+-- Toggle dropdown
+PlayerDropdown.MouseButton1Click:Connect(function()
+    DropdownFrame.Visible = not DropdownFrame.Visible
+    if DropdownFrame.Visible then
+        UpdatePlayerList()
+        local playerCount = #Players:GetPlayers() - 1
+        local height = math.min(playerCount * 32, 150)
+        DropdownFrame.Size = UDim2.new(0.9, 0, 0, height)
+    else
+        DropdownFrame.Size = UDim2.new(0.9, 0, 0, 0)
     end
 end)
 
--- 🟢 Toggle: Seguir al jugador seleccionado
-_call13:AddSwitch("Follow Player", function(state)
-    if state then
-        if not selectedPlayer then
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = "⚠️ No Player Selected",
-                Text = "Please select a player first.",
-                Duration = 3
-            })
-            return
-        end
-
-        following = true
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "✅ Following Enabled",
-            Text = "Now following " .. selectedPlayer.DisplayName,
-            Duration = 3
-        })
-
-        task.spawn(function()
-            while following and selectedPlayer and task.wait(0.1) do
-                local target = Players:FindFirstChild(selectedPlayer.Name)
-                if target then
-                    followPlayer(target)
-                else
-                    following = false
-                    selectedPlayer = nil
-                    game:GetService("StarterGui"):SetCore("SendNotification", {
-                        Title = "⚠️ Target Left",
-                        Text = "Player left the game.",
-                        Duration = 3
-                    })
-                    break
-                end
-            end
-        end)
+-- Función de teleport continuo
+local function StartTeleporting()
+    if not selectedPlayer then
+        StatusLabel.Text = "¡Selecciona un jugador primero!"
+        return
     end
-end)
-
--- 🔴 Toggle: Detener el seguimiento
-_call13:AddSwitch("Stop Follow", function(state)
-    if state then
-        following = false
-        selectedPlayer = nil
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "⛔ Follow Stopped",
-            Text = "You stopped following.",
-            Duration = 3
-        })
-    end
-end)
-
--- 📌 Reintentar cuando respawnees
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    if following and selectedPlayer then
-        local target = Players:FindFirstChild(selectedPlayer.Name)
-        if target then
-            followPlayer(target)
-        end
-    end
-end)
-
--- ⚡ AUTO GROUND SLAM
-_call13:NewToggle({
-    Title = "Auto Ground Slam",
-    Default = false,
-    Callback = function(state)
-        getgenv().godDamageActive = state
-        if state then
-            task.spawn(function()
-                while getgenv().godDamageActive do
-                    local player = LocalPlayer
-                    local groundSlam = player.Backpack:FindFirstChild("Ground Slam") or (player.Character and player.Character:FindFirstChild("Ground Slam"))
-
-                    if groundSlam then
-                        if groundSlam.Parent == player.Backpack then
-                            groundSlam.Parent = player.Character
-                        end
-                        if groundSlam:FindFirstChild("attackTime") then
-                            groundSlam.attackTime.Value = 0
-                        end
-                        player.muscleEvent:FireServer("slam")
-                        groundSlam:Activate()
-                    end
-
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end
-})
-
--- 🧭 BOTÓN DE TELETRANSPORTE
-_call13:NewButton({
-    Title = "Empty",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-        humanoidRootPart.CFrame = CFrame.new(-241.12, -369.25, -396.96)
-
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Teletransporte",
-            Text = "Teleported to Coordenadas (-241, -369, -396)",
-            Duration = 3
-        })
-    end
-})
-
-local _call14 = _call10:NewSection({
-    Title = "OP Things Farm",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-_call14:NewToggle({
-    Title = "Lock Position",
-    Callback = function(Value)
-        if Value then
-            local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
-            getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
-                if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
-                end
-            end)
-        else
-            if getgenv().posLock then
-                getgenv().posLock:Disconnect()
-                getgenv().posLock = nil
-            end
-        end
-    end
-})
-
-_call14:NewToggle({
-    Title = "Anti Knockback",
-    Callback = function(Value)
-        local playerName = game.Players.LocalPlayer.Name
-        local rootPart = game.Workspace:FindFirstChild(playerName):FindFirstChild("HumanoidRootPart")
+    
+    teleporting = true
+    TeleportButton.Visible = false
+    StopButton.Visible = true
+    StatusLabel.Text = "Teletransportando a " .. selectedPlayer.Name
+    
+    connection = RunService.Heartbeat:Connect(function()
+        if not teleporting then return end
         
-        if Value then
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(100000, 0, 100000)
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-            bodyVelocity.P = 1250
-            bodyVelocity.Parent = rootPart
+        local targetChar = selectedPlayer.Character
+        local localChar = LocalPlayer.Character
+        
+        if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+            if localChar and localChar:FindFirstChild("HumanoidRootPart") then
+                local targetPos = targetChar.HumanoidRootPart.CFrame
+                localChar.HumanoidRootPart.CFrame = targetPos * CFrame.new(0, 2, 3)
+            else
+                -- Esperar a que el personaje reaparezca
+                StatusLabel.Text = "Esperando respawn..."
+            end
         else
-            local existingVelocity = rootPart:FindFirstChild("BodyVelocity")
-            if existingVelocity and existingVelocity.MaxForce == Vector3.new(100000, 0, 100000) then
-                existingVelocity:Destroy()
-            end
+            StatusLabel.Text = "Objetivo no disponible"
         end
+    end)
+end
+
+-- Función para detener teleport
+local function StopTeleporting()
+    teleporting = false
+    if connection then
+        connection:Disconnect()
+        connection = nil
     end
-})
+    TeleportButton.Visible = true
+    StopButton.Visible = false
+    StatusLabel.Text = "Teleport detenido"
+end
 
--- 🧹 Delete All Frames
-_call14:NewToggle({
-    Title = "Delete All Frames",
-    Callback = function(state)
-        local rSto = game:GetService("ReplicatedStorage")
-        for _, obj in pairs(rSto:GetChildren()) do
-            if obj.Name:match("Frame$") and obj:IsA("GuiObject") then
-                if state then
-                    obj:Destroy()
-                end
-            end
-        end
+-- Eventos de botones
+TeleportButton.MouseButton1Click:Connect(StartTeleporting)
+StopButton.MouseButton1Click:Connect(StopTeleporting)
+
+-- Actualizar cuando se agreguen jugadores
+Players.PlayerAdded:Connect(function()
+    if DropdownFrame.Visible then
+        UpdatePlayerList()
     end
-})
+end)
 
-_call14:NewButton({
-    Title = "Anti AFK",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
+Players.PlayerRemoving:Connect(function(player)
+    if selectedPlayer == player then
+        StopTeleporting()
+        selectedPlayer = nil
+        PlayerDropdown.Text = "Seleccionar Jugador"
+        StatusLabel.Text = "Jugador seleccionado se fue"
+    end
+    if DropdownFrame.Visible then
+        UpdatePlayerList()
+    end
+end)
 
-        -- Si ya está activo, desconecta
-        if getgenv().antiAFKConnection then
-            getgenv().antiAFKConnection:Disconnect()
-            getgenv().antiAFKConnection = nil
-            return
-        end
+-- Manejar respawn del jugador local
+LocalPlayer.CharacterAdded:Connect(function(character)
+    if teleporting then
+        character:WaitForChild("HumanoidRootPart")
+        StatusLabel.Text = "Respawneado - Continuando teleport"
+    end
+end)
 
-        -- Conectar Anti-AFK ligero
-        getgenv().antiAFKConnection = LocalPlayer.Idled:Connect(function()
-            local VirtualUser = game:GetService("VirtualUser")
-            -- Simular solo un click pequeño, suficiente para reiniciar AFK
-            VirtualUser:ClickButton1(Vector2.new())
-        end)
-    end,
-})
-
-_call14:NewButton({
-    Title = "Anti-AFK GUI",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        local RunService = game:GetService("RunService")
-
-        -- Si ya existe, desconectamos y eliminamos
-        if getgenv().antiAFKGUIConnection then
-            getgenv().antiAFKGUIConnection:Disconnect()
-            getgenv().antiAFKGUIConnection = nil
-            if game.CoreGui:FindFirstChild("AntiAFK_GUI") then
-                game.CoreGui:FindFirstChild("AntiAFK_GUI"):Destroy()
-            end
-            return
-        end
-
-        -- Crear GUI
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "AntiAFK_GUI"
-        screenGui.ResetOnSpawn = false
-        screenGui.Parent = game.CoreGui
-
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 220, 0, 120)
-        frame.Position = UDim2.new(0, 50, 0, 50)
-        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        frame.BorderSizePixel = 2
-        frame.BorderColor3 = Color3.fromRGB(25, 25, 25)
-        frame.Parent = screenGui
-
-        -- Hacer draggable
-        frame.Active = true
-        frame.Draggable = true
-
-        -- Título
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, 0, 0, 30)
-        title.Position = UDim2.new(0, 0, 0, 0)
-        title.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        title.BorderSizePixel = 2
-        title.BorderColor3 = Color3.fromRGB(25, 25, 25)
-        title.Text = "Galaxy XVI"
-        title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        title.TextScaled = true
-        title.TextWrapped = true
-        title.Font = Enum.Font.SourceSansBold
-        title.Parent = frame
-
-        -- Información
-        local infoLabel = Instance.new("TextLabel")
-        infoLabel.Size = UDim2.new(1, -10, 1, -40)
-        infoLabel.Position = UDim2.new(0, 5, 0, 35)
-        infoLabel.BackgroundTransparency = 1
-        infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        infoLabel.TextScaled = true
-        infoLabel.TextWrapped = true
-        infoLabel.Text = "Anti-AFK Activo"
-        infoLabel.Font = Enum.Font.SourceSans
-        infoLabel.Parent = frame
-
-        -- Variables de sesión
-        local startTime = tick()
-        local fps = 0
-
-        -- Conectar Anti-AFK y actualizar GUI
-        getgenv().antiAFKGUIConnection = RunService.RenderStepped:Connect(function(deltaTime)
-            fps = math.floor(1 / deltaTime)
-            local sessionTime = tick() - startTime
-            local minutes = math.floor(sessionTime / 60)
-            local seconds = math.floor(sessionTime % 60)
-            infoLabel.Text = string.format("Anti-AFK Activo\nTiempo: %02d:%02d\nFPS: %d", minutes, seconds, fps)
-        end)
-
-        LocalPlayer.Idled:Connect(function()
-            local VirtualUser = game:GetService("VirtualUser")
-            VirtualUser:ClickButton1(Vector2.new())
-        end)
-    end,
-})
-
---- Sección de Entrenamiento
-
-local _call21 = _call20:NewSection({
-    Title = "Auto Rocks",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call22 = _call20:NewSection({
-    Title = "Auto Tools",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-local _call23 = _call20:NewSection({
-    Title = "Auto rebirth",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call24 = _call20:NewSection({
-    Title = "Auto Tools Combinate",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
---- Sección de Entrenamiento
-
-local _call31 = _call30:NewSection({
-    Title = "Misc 1",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call32 = _call30:NewSection({
-    Title = "Misc 2",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-local _call33 = _call30:NewSection({
-    Title = "Misc 3",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call34 = _call30:NewSection({
-    Title = "Misc 4",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
---- Seccion de entrenamiento
-
-local _call41 = _call40:NewSection({
-    Title = "Tiny Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call42 = _call40:NewSection({
-    Title = "Frozen Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-local _call43 = _call40:NewSection({
-    Title = "Misthyc Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call44 = _call40:NewSection({
-    Title = "Inferno Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-local _call45 = _call40:NewSection({
-    Title = "Legend Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call46 = _call40:NewSection({
-    Title = "King Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-local _call47 = _call40:NewSection({
-    Title = "Jungle Portal",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
---- Seccion de entrenamiento
-
-local _call51 = _call50:NewSection({
-    Title = "Strength",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call52 = _call50:NewSection({
-    Title = "Rebirth",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
-local _call53 = _call50:NewSection({
-    Title = "Kills",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call54 = _call50:NewSection({
-    Title = "Brawls",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
-
---- Sección de Entrenamiento
-
-local _call61 = _call60:NewSection({
-    Title = "Player Stats",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Left",
-})
-
-local _call62 = _call60:NewSection({
-    Title = "Me Stats",
-    Icon = "rbxassetid://109333634069157",
-    Position = "Right",
-})
+print("Script de Teleport cargado exitosamente!")
+StatusLabel.Text = "Script cargado - Selecciona un jugador"
